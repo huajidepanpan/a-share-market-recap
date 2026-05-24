@@ -1,0 +1,8 @@
+# Claude local settings
+.claude/
+
+# IDE
+.idea/
+
+# Generated intermediate file (regeneratable from Table.xls)
+**/Table.csv
