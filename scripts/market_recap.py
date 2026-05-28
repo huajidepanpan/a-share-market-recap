@@ -109,6 +109,8 @@ def read_stocks(csv_path):
             vol = safe_float(row.get("总手"))
             open_chg = safe_float(row.get("开盘涨幅"))
             remark = (row.get("备注") or "").strip()
+            vol_ratio = safe_float(row.get("量比"))  # 量比 = 成交量/5日均量
+            net_main = safe_float(row.get("主力净量"))  # 主力净流入占比
 
             board, up_lim, down_lim = classify_board(code)
             if is_st(name):
@@ -126,6 +128,7 @@ def read_stocks(csv_path):
                 "board": board, "up_limit": up_lim, "down_limit": down_lim,
                 "seal_amt": seal_amt, "seal_vol": seal_vol,
                 "open_chg": open_chg, "remark": remark, "streak": streak,
+                "vol_ratio": vol_ratio, "net_main": net_main,
             })
     return stocks
 
@@ -217,6 +220,257 @@ def build_sector_bubbles(stocks):
     return top15
 
 
+def build_sector_health(stocks):
+    """板块健康度评估: PE水位 + 量比趋势 + 封单强度"""
+    # 全市场PE中位数（只算正PE）
+    positive_pe = [s["pe"] for s in stocks if s["pe"] > 0]
+    market_pe_median = sorted(positive_pe)[len(positive_pe) // 2] if positive_pe else 0
+
+    sectors = defaultdict(lambda: {"stocks": [], "limit_ups": 0})
+    for s in stocks:
+        sectors[s["sector"]]["stocks"].append(s)
+        if s["chg"] >= s["up_limit"] and abs(s["chg"]) < 30:
+            sectors[s["sector"]]["limit_ups"] += 1
+
+    def pe_level_label(ratio):
+        """PE水位标签（横截面对比）"""
+        if ratio <= 0:
+            return "亏损板块", "#9e9e9e"
+        if ratio > 3.0:
+            return "极高估", "#ff1744"
+        if ratio > 2.0:
+            return "高估", "#ff5252"
+        if ratio > 1.5:
+            return "偏贵", "#ff8a65"
+        if ratio >= 0.7:
+            return "合理", "#ff9800"
+        if ratio >= 0.4:
+            return "偏便宜", "#4caf50"
+        return "低估", "#2e7d32"
+
+    def vol_trend_label(vr):
+        """量比趋势标签"""
+        if vr <= 0:
+            return "无数据", "#9e9e9e"
+        if vr > 1.5:
+            return "显著放量", "#ff1744"
+        if vr > 1.2:
+            return "温和放量", "#ff5722"
+        if vr >= 0.8:
+            return "平量", "#ff9800"
+        if vr >= 0.5:
+            return "温和缩量", "#4caf50"
+        return "显著缩量", "#2e7d32"
+
+    def seal_strength_label(sa, ta):
+        """封单强度标签"""
+        if ta <= 0 or sa <= 0:
+            return "无封单", "#78909c"
+        ratio = sa / ta
+        if ratio > 0.5:
+            return "极度抢筹", "#c62828"
+        if ratio > 0.2:
+            return "强势封板", "#d32f2f"
+        if ratio > 0.05:
+            return "封单适中", "#ff9800"
+        if ratio > 0:
+            return "封单薄弱", "#80cbc4"
+        return "无封单", "#78909c"
+
+    result = []
+    for sec, data in sectors.items():
+        ss = data["stocks"]
+        n = len(ss)
+        if n < 3:
+            continue
+
+        # PE中位数（仅正PE）
+        pe_list = sorted([s["pe"] for s in ss if s["pe"] > 0])
+        pe_median = pe_list[len(pe_list) // 2] if pe_list else 0
+        pe_ratio = pe_median / market_pe_median if (pe_median > 0 and market_pe_median > 0) else 0
+        pe_label, pe_color = pe_level_label(pe_ratio)
+
+        # 量比（排除零值）
+        vr_list = [s["vol_ratio"] for s in ss if s["vol_ratio"] > 0]
+        avg_vr = sum(vr_list) / len(vr_list) if vr_list else 0
+        vol_label, vol_color = vol_trend_label(avg_vr)
+
+        # 平均换手
+        to_list = [s["turnover"] for s in ss if s["turnover"] > 0]
+        avg_turnover = sum(to_list) / len(to_list) if to_list else 0
+
+        # 涨停封单
+        total_seal = sum(s["seal_amt"] for s in ss if s["chg"] >= s["up_limit"] and abs(s["chg"]) < 30)
+        total_amt = sum(s["amt"] for s in ss)
+        seal_label, seal_color = seal_strength_label(total_seal, total_amt)
+
+        # 主力净量平均
+        nm_list = [s["net_main"] for s in ss]
+        avg_net_main = sum(nm_list) / len(nm_list) if nm_list else 0
+
+        # 综合评分（0-10，越高越健康）
+        # PE偏便宜/合理得分高，放量得分高，封单强得分高
+        score = 5.0
+        if pe_label in ("偏便宜", "低估"):
+            score += 2.0
+        elif pe_label in ("合理",):
+            score += 1.0
+        elif pe_label in ("极高估", "高估"):
+            score -= 1.5
+        if avg_vr > 1.2:
+            score += 1.5
+        elif avg_vr < 0.5:
+            score -= 1.0
+        if total_seal > 0:
+            if total_seal / max(total_amt, 1) > 0.2:
+                score += 2.0
+            elif total_seal / max(total_amt, 1) > 0.05:
+                score += 1.0
+        score = max(0, min(10, round(score, 1)))
+
+        result.append({
+            "sector": sec,
+            "count": n,
+            "limit_ups": data["limit_ups"],
+            "pe_median": pe_median,
+            "pe_ratio": round(pe_ratio, 2),
+            "pe_label": pe_label,
+            "pe_color": pe_color,
+            "avg_vr": round(avg_vr, 2),
+            "vol_label": vol_label,
+            "vol_color": vol_color,
+            "avg_turnover": round(avg_turnover, 2),
+            "total_seal": total_seal,
+            "seal_label": seal_label,
+            "seal_color": seal_color,
+            "avg_net_main": round(avg_net_main, 2),
+            "total_amt": total_amt,
+            "score": score,
+        })
+
+    return sorted(result, key=lambda x: -x["score"])
+
+
+def build_osmosis_view(stocks):
+    """渗透压模型：计算每个板块的"价值浓度"和渗透压差 ΔP
+
+    C_i = 0.20 * s_value + 0.60 * s_momentum + 0.20 * s_seal
+
+    s_value  : 估值吸引力（静态），PE 越低分越高
+    s_momentum: 资金动量（动态），主力净量 + 涨停密度 + 涨幅
+    s_seal   : 涨停封单强度（极端信号）
+
+    返回: (sector_list sorted by ΔP desc, C_pool)
+    """
+    # 全市场PE中位数
+    positive_pe = [s["pe"] for s in stocks if s["pe"] > 0]
+    market_pe_median = sorted(positive_pe)[len(positive_pe) // 2] if positive_pe else 0
+
+    sectors = defaultdict(lambda: {"stocks": [], "limit_ups": 0, "seal_sum": 0.0})
+    for s in stocks:
+        key = s["sector"]
+        sectors[key]["stocks"].append(s)
+        if s["chg"] >= s["up_limit"] and abs(s["chg"]) < 30:
+            sectors[key]["limit_ups"] += 1
+            sectors[key]["seal_sum"] += s["seal_amt"]
+
+    result = []
+    for sec, data in sectors.items():
+        ss = data["stocks"]
+        n = len(ss)
+        if n < 3:
+            continue
+
+        # ——— Component 1: s_value（估值吸引力，静态）———
+        pe_list = sorted([s["pe"] for s in ss if s["pe"] > 0])
+        pe_median = pe_list[len(pe_list) // 2] if pe_list else 0
+        if pe_median > 0 and market_pe_median > 0:
+            pe_ratio = pe_median / market_pe_median
+            # sigmoid: 以 pe_ratio=1.0（市场均价）为中心，压缩极值
+            s_value = 2.0 / (1.0 + math.exp(2.0 * (pe_ratio - 1.0)))
+        else:
+            pe_ratio = 0
+            s_value = 0.0  # 亏损板块无PE参照
+
+        # ——— Component 2: s_momentum（资金动量，动态）———
+        # 2a: 主力净量，tanh 映射到 [-1, 1]
+        nm_list = [s["net_main"] for s in ss]
+        avg_nm = sum(nm_list) / len(nm_list) if nm_list else 0
+        s_nm = math.tanh(avg_nm * 2)
+
+        # 2b: 涨停密度，指数饱和
+        lu_density = data["limit_ups"] / n
+        s_lu = 1.0 - math.exp(-lu_density * 15)
+
+        # 2c: 平均涨幅，tanh 映射
+        avg_chg = sum(s["chg"] for s in ss) / n
+        s_chg = math.tanh(avg_chg / 3)
+
+        s_momentum = 0.4 * s_nm + 0.35 * s_lu + 0.25 * s_chg
+
+        # ——— Component 3: s_seal（封单极端信号）———
+        total_amt = sum(s["amt"] for s in ss)
+        seal_ratio = data["seal_sum"] / max(total_amt, 1)
+        s_seal = 1.0 - math.exp(-seal_ratio * 10)
+
+        # ——— 合成浓度 C_i ———
+        C_i = 0.20 * s_value + 0.60 * s_momentum + 0.20 * s_seal
+
+        # ——— 膜通透性（换手率代理）———
+        to_list = [s["turnover"] for s in ss if s["turnover"] > 0]
+        avg_turnover = sum(to_list) / len(to_list) if to_list else 0
+        membrane = min(avg_turnover / 8, 2.0)  # 8% 换手 = 基准通透性 1.0
+
+        # ——— 量比（实际流速观测）———
+        vr_list = [s["vol_ratio"] for s in ss if s["vol_ratio"] > 0]
+        avg_vr = sum(vr_list) / len(vr_list) if vr_list else 0
+
+        result.append({
+            "sector": sec,
+            "count": n,
+            "limit_ups": data["limit_ups"],
+            "s_value": round(s_value, 3),
+            "s_momentum": round(s_momentum, 3),
+            "s_seal": round(s_seal, 3),
+            "C_i": round(C_i, 3),
+            "avg_turnover": round(avg_turnover, 2),
+            "membrane": round(membrane, 2),
+            "avg_vr": round(avg_vr, 2),
+            "avg_nm": round(avg_nm, 2),
+            "avg_chg": round(avg_chg, 2),
+            "pe_median": pe_median,
+            "pe_ratio": round(pe_ratio, 2),
+            "total_amt": total_amt,
+        })
+
+    # ——— 全市场平均浓度 C_pool（按成交额加权）———
+    total_weight = sum(r["total_amt"] for r in result)
+    if total_weight > 0:
+        C_pool = sum(r["C_i"] * r["total_amt"] / total_weight for r in result)
+    else:
+        C_pool = sum(r["C_i"] for r in result) / len(result) if result else 0
+
+    # ——— 渗透压差 ΔP 与流向分类 ———
+    for r in result:
+        r["C_pool"] = round(C_pool, 3)
+        r["delta_P"] = round(r["C_i"] - C_pool, 3)
+
+        dp = r["delta_P"]
+        if dp > 0.30:
+            r["flow_label"] = "强吸水"
+        elif dp > 0.15:
+            r["flow_label"] = "吸水"
+        elif dp > -0.15:
+            r["flow_label"] = "均衡"
+        elif dp > -0.30:
+            r["flow_label"] = "失水"
+        else:
+            r["flow_label"] = "强失水"
+
+    result.sort(key=lambda x: -x["delta_P"])
+    return result, C_pool
+
+
 # ========== 文本报告 ==========
 
 def generate_text(stocks, output_path):
@@ -304,9 +558,47 @@ def generate_text(stocks, output_path):
           f"{s['chg']:>+6.2f}% {s['turnover']:>5.1f}% {s['amt']/1e8:>8.1f}")
     w()
 
+    # === 新模块: 板块健康度评估 ===
+    sector_health = build_sector_health(stocks)
+    w("【六、板块健康度评估】（PE水位 + 量比趋势 + 封单强度）")
+    w(f"  全市场PE中位数: {sorted([s['pe'] for s in stocks if s['pe'] > 0])[len([s['pe'] for s in stocks if s['pe'] > 0])//2] if [s['pe'] for s in stocks if s['pe'] > 0] else 0:.1f}")
+    w(f"  {'板块':<12s} {'家数':>4s} {'PE':>7s} {'水位':<8s} {'量比':>6s} {'趋势':<8s} {'换手':>6s} {'封单额':>9s} {'封单强度':<8s} {'主力':>6s} {'评分':>4s}")
+    for h in sector_health[:15]:
+        pe_str = f"{h['pe_median']:.1f}" if h['pe_median'] > 0 else "亏损"
+        seal_str = f"{h['total_seal']/1e8:.1f}亿" if h['total_seal'] > 1e8 else (f"{h['total_seal']/1e4:.0f}万" if h['total_seal'] > 0 else "-")
+        w(f"  {h['sector']:<12s} {h['count']:>4d} {pe_str:>7s} {h['pe_label']:<8s} "
+          f"{h['avg_vr']:>5.2f} {h['vol_label']:<8s} {h['avg_turnover']:>5.1f}% "
+          f"{seal_str:>9s} {h['seal_label']:<8s} {h['avg_net_main']:>+5.2f}% {h['score']:>4.1f}")
+    w()
+
+    # === 新模块: 渗透压视角 ===
+    osmosis_data, C_pool = build_osmosis_view(stocks)
+    w("【七、渗透压视角】（浓度差 → 资金流向倾向）")
+    w(f"  全市场平均浓度 C_pool = {C_pool:.3f}")
+    w(f"  公式: C_i = 20%估值吸引力 + 60%资金动量 + 20%封单信号")
+    w()
+    w(f"  {'板块':<12s} {'浓度Ci':>7s} {'ΔP':>7s} {'流向':<6s} {'家数':>5s} {'涨停':>4s} "
+      f"{'换手(膜)':>7s} {'量比':>5s} {'主力':>6s}")
+    # TOP10 吸水 + BOT5 失水
+    top_absorb = [r for r in osmosis_data if r["delta_P"] > 0][:10]
+    bot_lose = [r for r in osmosis_data if r["delta_P"] < 0][-5:]
+    if top_absorb:
+        w("  ── 吸水端（ΔP > 0，预测资金流入）──")
+    for r in top_absorb:
+        w(f"  {r['sector']:<12s} {r['C_i']:>7.3f} {r['delta_P']:>+7.3f} {r['flow_label']:<6s} "
+          f"{r['count']:>5d} {r['limit_ups']:>4d} "
+          f"{r['avg_turnover']:>6.1f}% {r['avg_vr']:>5.2f} {r['avg_nm']:>+5.2f}%")
+    if bot_lose:
+        w("  ── 失水端（ΔP < 0，预测资金流出）──")
+    for r in bot_lose:
+        w(f"  {r['sector']:<12s} {r['C_i']:>7.3f} {r['delta_P']:>+7.3f} {r['flow_label']:<6s} "
+          f"{r['count']:>5d} {r['limit_ups']:>4d} "
+          f"{r['avg_turnover']:>6.1f}% {r['avg_vr']:>5.2f} {r['avg_nm']:>+5.2f}%")
+    w()
+
     # 成交额 TOP20
     by_amt = sorted(stocks, key=lambda x: x["amt"], reverse=True)
-    w("【六、成交额 TOP20】")
+    w("【八、成交额 TOP20】")
     for i, s in enumerate(by_amt[:20]):
         w(f"  {i+1:2d}. {s['name']:<8s} {s['code']:<10s} {s['board']:<6s} "
           f"{s['chg']:>+7.2f}%  成交{s['amt']/1e8:>8.1f}亿  换手{s['turnover']:>5.1f}%")
@@ -315,18 +607,18 @@ def generate_text(stocks, output_path):
     # 5日涨跌
     valid5 = [s for s in stocks if s["chg5"] != 0]
     valid5.sort(key=lambda x: x["chg5"], reverse=True)
-    w("【七、5日涨幅 TOP15】")
+    w("【九、5日涨幅 TOP15】")
     for i, s in enumerate(valid5[:15]):
         w(f"  {i+1:2d}. {s['name']:<8s} 5日{s['chg5']:>+7.2f}%  今{s['chg']:>+7.2f}%  {s['board']}")
     valid5.sort(key=lambda x: x["chg5"])
     w()
-    w("【七-B、5日跌幅 TOP15】")
+    w("【九-B、5日跌幅 TOP15】")
     for i, s in enumerate(valid5[:15]):
         w(f"  {i+1:2d}. {s['name']:<8s} 5日{s['chg5']:>+7.2f}%  今{s['chg']:>+7.2f}%  {s['board']}")
     w()
 
     # 市值 TOP10
-    w("【八、总市值 TOP10】")
+    w("【十、总市值 TOP10】")
     for i, s in enumerate(sorted(stocks, key=lambda x: x["mcap"], reverse=True)[:10]):
         w(f"  {i+1:2d}. {s['name']:<8s} 市值{s['mcap']/1e8:>10,.0f}亿  {s['chg']:>+6.2f}%")
     w()
@@ -345,6 +637,12 @@ def generate_text(stocks, output_path):
         w(f"  最高板: {top_streak}连板")
     if best_sec:
         w(f"  主线板块: {best_sec[0]}（{best_sec[1]['count']}家涨停, 成交{best_sec[1]['amt']/1e8:.0f}亿）")
+    if sector_health:
+        best_h = sector_health[0]
+        w(f"  健康度最佳: {best_h['sector']}（评分{best_h['score']:.1f}, PE{best_h['pe_label']}, {best_h['vol_label']}, {best_h['seal_label']}）")
+    if osmosis_data:
+        top_osmosis = osmosis_data[0]
+        w(f"  渗透压最强: {top_osmosis['sector']}（ΔP={top_osmosis['delta_P']:+.3f}, {top_osmosis['flow_label']}, C={top_osmosis['C_i']:.3f}）")
     w("=" * 70)
 
     text = "\n".join(lines)
@@ -367,6 +665,24 @@ def generate_html(stocks, output_path):
 
     # 泡泡图数据
     bubble_data = build_sector_bubbles(stocks)
+
+    # 板块健康度
+    sector_health = build_sector_health(stocks)
+    # 渗透压模型
+    osmosis_data, C_pool = build_osmosis_view(stocks)
+    health_map = {h["sector"]: h for h in sector_health}
+    # 合并健康度到泡泡数据
+    for b in bubble_data:
+        h = health_map.get(b["sector"])
+        if h:
+            b.update({"pe_label": h["pe_label"], "pe_color": h["pe_color"],
+                       "vol_label": h["vol_label"], "vol_color": h["vol_color"],
+                       "seal_label": h["seal_label"], "seal_color": h["seal_color"],
+                       "score": h["score"]})
+        else:
+            b.update({"pe_label": "-", "pe_color": "#888", "vol_label": "-",
+                       "vol_color": "#888", "seal_label": "-", "seal_color": "#888",
+                       "score": 0})
     bubble_json = json.dumps(bubble_data, ensure_ascii=False)
 
     # 连板
@@ -418,6 +734,7 @@ def generate_html(stocks, output_path):
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .tag { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; margin:1px 2px; }
   .tag-up { background:#c0392b; color:#fff; }
+  .tag-down { background:#27ae60; color:#fff; }
   .tag-strong { background:#e67e22; color:#fff; }
   .summary { font-size:14px; line-height:2; }
 
@@ -639,6 +956,76 @@ def generate_html(stocks, output_path):
   <button class="expand-btn" onclick="toggleGroup('turnover', this)">展开全部</button>
 </div>
 
+<!-- 板块健康度评估 -->
+<div class="section">
+  <h2>板块健康度评估 <span style="font-size:12px;color:#888;">（PE水位 + 量比趋势 + 封单强度）</span></h2>
+  <p style="color:#666;font-size:12px;margin-bottom:8px;">全市场PE中位数: {sorted([s['pe'] for s in stocks if s['pe'] > 0])[len([s['pe'] for s in stocks if s['pe'] > 0])//2] if [s['pe'] for s in stocks if s['pe'] > 0] else 0:.1f}</p>
+  <table>
+    <tr><th>板块</th><th>家数</th><th>PE水位</th><th>量比</th><th>量趋势</th><th>换手</th><th>封单强度</th><th>主力</th><th>评分</th></tr>
+"""
+    for h in sector_health[:15]:
+        pe_str = f"{h['pe_median']:.1f}" if h['pe_median'] > 0 else "亏损"
+        seal_str = f"{h['total_seal']/1e8:.1f}亿" if h['total_seal'] > 1e8 else (f"{h['total_seal']/1e4:.0f}万" if h['total_seal'] > 0 else "-")
+        body += f"""    <tr>
+      <td>{h['sector']}</td><td>{h['count']}</td>
+      <td><span style="color:{h['pe_color']};">{pe_str} {h['pe_label']}</span></td>
+      <td>{h['avg_vr']:.2f}</td>
+      <td><span style="color:{h['vol_color']};">{h['vol_label']}</span></td>
+      <td>{h['avg_turnover']:.1f}%</td>
+      <td><span style="color:{h['seal_color']};">{seal_str} {h['seal_label']}</span></td>
+      <td style="color:{'#ff5252' if h['avg_net_main'] > 0 else '#4caf50'};">{h['avg_net_main']:+.2f}%</td>
+      <td><b style="color:{'#ff9800' if h['score'] >= 6 else ('#4caf50' if h['score'] >= 4 else '#888')};">{h['score']:.1f}</b></td>
+    </tr>
+"""
+    body += """  </table>
+  <p style="color:#666;font-size:11px;margin-top:8px;">* PE水位=板块PE中位数/全市场PE中位数（横截面对比）| 量比=成交量/5日均量 | 封单强度=涨停股封单额/板块总成交额 | 评分0-10综合三维度</p>
+</div>
+
+<!-- 渗透压视角 -->
+<div class="section">
+  <h2>渗透压视角 <span style="font-size:12px;color:#888;">（浓度差 → 资金流向倾向）</span></h2>
+  <p style="color:#666;font-size:12px;margin-bottom:8px;">
+    全市场平均浓度 C<sub>pool</sub> = <b>{C_pool:.3f}</b> &nbsp;|&nbsp;
+    公式: C<sub>i</sub> = 20%估值吸引力 + 60%资金动量 + 20%封单信号
+  </p>
+  <table>
+    <tr><th>板块</th><th>浓度 C<sub>i</sub></th><th>ΔP</th><th>流向</th><th>家数</th><th>涨停</th><th>换手(膜)</th><th>量比</th><th>主力</th></tr>
+"""
+    # TOP10 吸水
+    top_absorb = [r for r in osmosis_data if r["delta_P"] > 0][:10]
+    for r in top_absorb:
+        dp_color = "#e74c3c" if r["delta_P"] > 0.1 else "#ff9800"
+        body += f"""    <tr>
+      <td>{r['sector']}</td>
+      <td><b>{r['C_i']:.3f}</b></td>
+      <td style="color:{dp_color};">{r['delta_P']:+.3f}</td>
+      <td><span class="tag tag-up">{r['flow_label']}</span></td>
+      <td>{r['count']}</td><td>{r['limit_ups']}</td>
+      <td>{r['avg_turnover']:.1f}%</td><td>{r['avg_vr']:.2f}</td>
+      <td style="color:{'#ff5252' if r['avg_nm'] > 0 else '#4caf50'};">{r['avg_nm']:+.2f}%</td>
+    </tr>
+"""
+    # BOT5 失水
+    bot_lose = [r for r in osmosis_data if r["delta_P"] < 0][-5:]
+    if bot_lose:
+        body += """    <tr><td colspan="9" style="color:#888;text-align:center;border-bottom:1px solid #444;">—— 失水端（ΔP < 0）——</td></tr>
+"""
+    for r in bot_lose:
+        dp_color = "#4caf50" if r["delta_P"] < -0.1 else "#81c784"
+        body += f"""    <tr>
+      <td>{r['sector']}</td>
+      <td><b>{r['C_i']:.3f}</b></td>
+      <td style="color:{dp_color};">{r['delta_P']:+.3f}</td>
+      <td><span class="tag tag-down">{r['flow_label']}</span></td>
+      <td>{r['count']}</td><td>{r['limit_ups']}</td>
+      <td>{r['avg_turnover']:.1f}%</td><td>{r['avg_vr']:.2f}</td>
+      <td style="color:{'#ff5252' if r['avg_nm'] > 0 else '#4caf50'};">{r['avg_nm']:+.2f}%</td>
+    </tr>
+"""
+    body += """  </table>
+  <p style="color:#666;font-size:11px;margin-top:8px;">* C<sub>i</sub>=浓度得分 | ΔP=C<sub>i</sub>-C<sub>pool</sub>（渗透压差）| 换手率≈膜通透性 | 量比/主力≈流速观测 | ΔP>0预测资金流入，ΔP<0预测流出</p>
+</div>
+
 <!-- 总结 -->
 <div class="section">
   <h2>市场总结</h2>
@@ -654,6 +1041,12 @@ def generate_html(stocks, output_path):
         body += f"    <p>最高连板: <b class='yellow'>{top_streak}板</b></p>\n"
     if sector_heat:
         body += f"    <p>主线: <b>{sector_heat[0][0]}</b>（{sector_heat[0][1]['count']}家涨停, 成交{sector_heat[0][1]['amt']/1e8:.0f}亿）</p>\n"
+    if sector_health:
+        best_h = sector_health[0]
+        body += f"    <p>健康度最佳: <b>{best_h['sector']}</b>（评分{best_h['score']:.1f}, PE{best_h['pe_label']}）</p>\n"
+    if osmosis_data:
+        top_o = osmosis_data[0]
+        body += f"    <p>渗透压最强: <b>{top_o['sector']}</b>（ΔP={top_o['delta_P']:+.3f}, {top_o['flow_label']}）</p>\n"
     body += """    <p style="color:#666;margin-top:12px;font-size:12px;">免责声明: 以上分析仅供参考，不构成投资建议。</p>
   </div>
 </div>
@@ -956,10 +1349,17 @@ function toggle5Dn(btn) {{
       tooltip.style.display = 'block';
       tooltip.style.left = (found.x + found.r + 12) + 'px';
       tooltip.style.top = (found.y - 25) + 'px';
+      var healthLine = '';
+      if (found.score > 0) {{
+        healthLine = 'PE: <span style="color:' + (found.pe_color||'#888') + ';">' + (found.pe_label||'-') + '</span> | ' +
+          '量: <span style="color:' + (found.vol_color||'#888') + ';">' + (found.vol_label||'-') + '</span> | ' +
+          '封单: <span style="color:' + (found.seal_color||'#888') + ';">' + (found.seal_label||'-') + '</span> | ' +
+          '评分: <b style="color:#ff9800;">' + (found.score||0).toFixed(1) + '</b><br>';
+      }}
       tooltip.innerHTML = '<b>' + found.sector + '</b> <span style="font-size:10px;color:' + found.style.fill + ';">' + found.style.label + '</span><br>' +
         '平均涨跌: <b style="color:' + (found.avg_chg>=0?'#ff5252':'#69f0ae') + ';">' + (found.avg_chg>=0?'+':'') + found.avg_chg.toFixed(2) + '%</b> | 上涨占比: ' + found.up_ratio + '%<br>' +
         '涨停: ' + found.limit_ups + '家 | 市值: ' + (found.mcap/1e8).toFixed(0) + '亿 | ' + found.count + '只成分股<br>' +
-        '代表: ' + (found.leaders||[]).slice(0,2).join(', ');
+        '代表: ' + (found.leaders||[]).slice(0,2).join(', ') + '<br>' + healthLine;
       canvas.style.cursor = 'pointer';
     }} else {{
       tooltip.style.display = 'none';

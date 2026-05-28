@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A股市场复盘 2026-05-28 08:26</title>
+<title>A股市场复盘 2026-05-28 23:04</title>
 <style>
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -32,6 +32,7 @@
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .tag { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; margin:1px 2px; }
   .tag-up { background:#c0392b; color:#fff; }
+  .tag-down { background:#27ae60; color:#fff; }
   .tag-strong { background:#e67e22; color:#fff; }
   .summary { font-size:14px; line-height:2; }
 
@@ -58,7 +59,7 @@
 <body>
 <div class="header">
   <h1>A股市场复盘</h1>
-  <div class="date">2026-05-28 08:26</div>
+  <div class="date">2026-05-28 23:04</div>
 </div>
 
 <!-- 仪表盘 -->
@@ -792,6 +793,155 @@
   <p style="color:#666;font-size:11px;margin-top:8px;">* PE水位=板块PE中位数/全市场PE中位数（横截面对比）| 量比=成交量/5日均量 | 封单强度=涨停股封单额/板块总成交额 | 评分0-10综合三维度</p>
 </div>
 
+<!-- 渗透压视角 -->
+<div class="section">
+  <h2>渗透压视角 <span style="font-size:12px;color:#888;">（浓度差 → 资金流向倾向）</span></h2>
+  <p style="color:#666;font-size:12px;margin-bottom:8px;">
+    全市场平均浓度 C<sub>pool</sub> = <b>{C_pool:.3f}</b> &nbsp;|&nbsp;
+    公式: C<sub>i</sub> = 20%估值吸引力 + 60%资金动量 + 20%封单信号
+  </p>
+  <table>
+    <tr><th>板块</th><th>浓度 C<sub>i</sub></th><th>ΔP</th><th>流向</th><th>家数</th><th>涨停</th><th>换手(膜)</th><th>量比</th><th>主力</th></tr>
+    <tr>
+      <td>火电</td>
+      <td><b>0.751</b></td>
+      <td style="color:#e74c3c;">+0.731</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>31</td><td>4</td>
+      <td>5.4%</td><td>1.22</td>
+      <td style="color:#ff5252;">+0.31%</td>
+    </tr>
+    <tr>
+      <td>钼</td>
+      <td><b>0.749</b></td>
+      <td style="color:#e74c3c;">+0.729</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>3</td><td>1</td>
+      <td>11.8%</td><td>1.58</td>
+      <td style="color:#ff5252;">+1.79%</td>
+    </tr>
+    <tr>
+      <td>印染</td>
+      <td><b>0.715</b></td>
+      <td style="color:#e74c3c;">+0.695</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>4</td><td>1</td>
+      <td>3.2%</td><td>0.91</td>
+      <td style="color:#ff5252;">+0.23%</td>
+    </tr>
+    <tr>
+      <td>水电</td>
+      <td><b>0.690</b></td>
+      <td style="color:#e74c3c;">+0.670</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>11</td><td>1</td>
+      <td>4.1%</td><td>1.18</td>
+      <td style="color:#ff5252;">+0.33%</td>
+    </tr>
+    <tr>
+      <td>白酒</td>
+      <td><b>0.578</b></td>
+      <td style="color:#e74c3c;">+0.558</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>20</td><td>1</td>
+      <td>4.2%</td><td>2.22</td>
+      <td style="color:#ff5252;">+0.14%</td>
+    </tr>
+    <tr>
+      <td>煤炭开采</td>
+      <td><b>0.565</b></td>
+      <td style="color:#e74c3c;">+0.545</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>29</td><td>2</td>
+      <td>1.9%</td><td>1.07</td>
+      <td style="color:#ff5252;">+0.12%</td>
+    </tr>
+    <tr>
+      <td>被动元件</td>
+      <td><b>0.487</b></td>
+      <td style="color:#e74c3c;">+0.467</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>13</td><td>3</td>
+      <td>8.3%</td><td>1.01</td>
+      <td style="color:#ff5252;">+0.12%</td>
+    </tr>
+    <tr>
+      <td>商业地产</td>
+      <td><b>0.475</b></td>
+      <td style="color:#e74c3c;">+0.455</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>7</td><td>1</td>
+      <td>1.1%</td><td>0.99</td>
+      <td style="color:#ff5252;">+0.14%</td>
+    </tr>
+    <tr>
+      <td>乳品</td>
+      <td><b>0.460</b></td>
+      <td style="color:#e74c3c;">+0.440</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>17</td><td>1</td>
+      <td>2.8%</td><td>1.88</td>
+      <td style="color:#ff5252;">+0.10%</td>
+    </tr>
+    <tr>
+      <td>影视院线</td>
+      <td><b>0.420</b></td>
+      <td style="color:#e74c3c;">+0.400</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>20</td><td>2</td>
+      <td>4.8%</td><td>1.53</td>
+      <td style="color:#ff5252;">+0.33%</td>
+    </tr>
+    <tr><td colspan="9" style="color:#888;text-align:center;border-bottom:1px solid #444;">—— 失水端（ΔP < 0）——</td></tr>
+    <tr>
+      <td>通信工程及服务</td>
+      <td><b>-0.263</b></td>
+      <td style="color:#4caf50;">-0.283</td>
+      <td><span class="tag tag-down">失水</span></td>
+      <td>18</td><td>0</td>
+      <td>7.5%</td><td>0.90</td>
+      <td style="color:#4caf50;">-0.32%</td>
+    </tr>
+    <tr>
+      <td>磨具磨料</td>
+      <td><b>-0.263</b></td>
+      <td style="color:#4caf50;">-0.283</td>
+      <td><span class="tag tag-down">失水</span></td>
+      <td>10</td><td>0</td>
+      <td>9.0%</td><td>1.02</td>
+      <td style="color:#4caf50;">-0.34%</td>
+    </tr>
+    <tr>
+      <td>半导体设备</td>
+      <td><b>-0.264</b></td>
+      <td style="color:#4caf50;">-0.284</td>
+      <td><span class="tag tag-down">失水</span></td>
+      <td>23</td><td>0</td>
+      <td>5.5%</td><td>0.83</td>
+      <td style="color:#4caf50;">-0.39%</td>
+    </tr>
+    <tr>
+      <td>通信应用增值服务</td>
+      <td><b>-0.280</b></td>
+      <td style="color:#4caf50;">-0.300</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>23</td><td>0</td>
+      <td>5.8%</td><td>0.83</td>
+      <td style="color:#4caf50;">-0.40%</td>
+    </tr>
+    <tr>
+      <td>集成电路封测</td>
+      <td><b>-0.361</b></td>
+      <td style="color:#4caf50;">-0.381</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>13</td><td>0</td>
+      <td>16.5%</td><td>1.16</td>
+      <td style="color:#4caf50;">-1.18%</td>
+    </tr>
+  </table>
+  <p style="color:#666;font-size:11px;margin-top:8px;">* C<sub>i</sub>=浓度得分 | ΔP=C<sub>i</sub>-C<sub>pool</sub>（渗透压差）| 换手率≈膜通透性 | 量比/主力≈流速观测 | ΔP>0预测资金流入，ΔP<0预测流出</p>
+</div>
+
 <!-- 总结 -->
 <div class="section">
   <h2>市场总结</h2>
@@ -800,6 +950,8 @@
     <p>涨停 <span class="red">65</span> 家 | 跌停 <span class="green">43</span> 家 | 成交 <b>32,382</b> 亿</p>
     <p>最高连板: <b class='yellow'>4板</b></p>
     <p>主线: <b>火电</b>（4家涨停, 成交95亿）</p>
+    <p>健康度最佳: <b>火电</b>（评分8.5, PE低估）</p>
+    <p>渗透压最强: <b>火电</b>（ΔP=+0.731, 强吸水）</p>
     <p style="color:#666;margin-top:12px;font-size:12px;">免责声明: 以上分析仅供参考，不构成投资建议。</p>
   </div>
 </div>
