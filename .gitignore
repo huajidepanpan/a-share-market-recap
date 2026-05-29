@@ -6,3 +6,6 @@
 
 # Generated intermediate file (regeneratable from Table.xls)
 **/Table.csv
+
+# Python cache
+__pycache__/
