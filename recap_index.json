@@ -22,13 +22,19 @@
     "20260615": {
       "recaps": [
         {
-          "suffix": "",
-          "label": "复盘",
-          "html": "20260615/recap.html",
-          "txt": "20260615/recap.txt"
+          "suffix": "01",
+          "label": "复盘 01",
+          "html": "20260615/recap_01.html",
+          "txt": "20260615/recap_01.txt"
+        },
+        {
+          "suffix": "02",
+          "label": "复盘 02",
+          "html": "20260615/recap_02.html",
+          "txt": "20260615/recap_02.txt"
         }
       ],
-      "default": "",
+      "default": "02",
       "premarket": null
     },
     "20260612": {
