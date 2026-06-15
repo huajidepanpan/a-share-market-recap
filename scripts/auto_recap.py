@@ -137,13 +137,13 @@ def sync_default_recap(dir_path):
 
     if html_files:
         src = html_files[-1]
-        if not os.path.samefile(src, default_html):
+        if not os.path.exists(default_html) or not os.path.samefile(src, default_html):
             shutil.copy2(src, default_html)
             _safe_print(f"  recap.html → {os.path.basename(src)}")
 
     if txt_files:
         src = txt_files[-1]
-        if not os.path.samefile(src, default_txt):
+        if not os.path.exists(default_txt) or not os.path.samefile(src, default_txt):
             shutil.copy2(src, default_txt)
             _safe_print(f"  recap.txt  → {os.path.basename(src)}")
 
