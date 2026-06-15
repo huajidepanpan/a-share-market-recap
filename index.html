@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A股市场复盘</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Microsoft YaHei',sans-serif;background:#1a1a2e;color:#eee}
+#toolbar{position:fixed;top:0;left:0;right:0;z-index:100;
+  background:linear-gradient(135deg,#16213e,#0f3460);padding:10px 16px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  box-shadow:0 2px 12px rgba(0,0,0,.5)}
+#toolbar select,#toolbar button{
+  padding:6px 12px;border-radius:6px;border:1px solid #e94560;
+  background:#1a1a2e;color:#eee;font-size:14px;cursor:pointer}
+#toolbar button:hover{background:#e94560}
+#toolbar .title{font-size:18px;font-weight:bold;color:#e94560;margin-right:8px}
+#toolbar .sep{color:#555;margin:0 2px}
+#tabs{display:flex;gap:4px;flex-wrap:wrap}
+#tabs .tab{padding:6px 14px;border-radius:6px;border:1px solid #555;
+  background:#1a1a2e;color:#aaa;cursor:pointer;font-size:13px}
+#tabs .tab.active{background:#e94560;color:#fff;border-color:#e94560}
+#toolbar a{color:#0af;text-decoration:none;font-size:13px}
+#iframe-wrap{position:fixed;top:54px;left:0;right:0;bottom:0}
+iframe{width:100%;height:100%;border:none}
+.no-data{text-align:center;padding:80px 20px;color:#888;font-size:16px}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <span class="title">A股市场复盘</span>
+  <button onclick="goPrev()" title="上一个交易日">◀</button>
+  <select id="dateSelect" onchange="onDateChange()"></select>
+  <button onclick="goNext()" title="下一个交易日">▶</button>
+  <span class="sep">|</span>
+  <div id="tabs"></div>
+  <span style="flex:1"></span>
+  <a id="premarketLink" href="#" style="display:none">盘前分析</a>
+</div>
+<div id="iframe-wrap">
+  <iframe id="recapFrame" src="" onload="onFrameLoad()"></iframe>
+</div>
+<script>
+var data = null;
+var currentDate = '';
+var currentSuffix = '';
+
+fetch('recap_index.json?' + Date.now())
+  .then(r => r.json())
+  .then(d => { data = d; init(); })
+  .catch(() => document.getElementById('iframe-wrap').innerHTML =
+    '<div class="no-data">无法加载数据，请先运行 auto_recap.py 生成复盘</div>');
+
+function init(){
+  var sel = document.getElementById('dateSelect');
+  sel.innerHTML = data.dates.map(d => '<option value="'+d+'">'+fmtDate(d)+'</option>').join('');
+  if(data.latest){
+    currentDate = data.latest;
+    sel.value = currentDate;
+    switchDate(currentDate);
+  }
+}
+
+function fmtDate(d){ return d.slice(0,4)+'/'+d.slice(4,6)+'/'+d.slice(6,8); }
+
+function switchDate(date){
+  currentDate = date;
+  var info = data.recaps[date];
+  if(!info) return;
+  currentSuffix = info.default;
+  loadRecap(date, currentSuffix);
+  renderTabs(date, info);
+  // premarket link
+  var pl = document.getElementById('premarketLink');
+  if(info.premarket){
+    pl.href = info.premarket;
+    pl.style.display = '';
+  } else {
+    pl.style.display = 'none';
+  }
+}
+
+function loadRecap(date, suffix){
+  var info = data.recaps[date];
+  var r = info.recaps.find(function(x){ return x.suffix === suffix; });
+  var src = r ? r.html : '';
+  var frame = document.getElementById('recapFrame');
+  if(frame.src !== src) frame.src = src;
+}
+
+function renderTabs(date, info){
+  var tabs = document.getElementById('tabs');
+  if(info.recaps.length <= 1){
+    tabs.innerHTML = '';
+    return;
+  }
+  tabs.innerHTML = info.recaps.map(function(r){
+    var cls = (r.suffix === currentSuffix) ? 'tab active' : 'tab';
+    return '<span class="'+cls+'" onclick="switchRecap(\''+date+'\',\''+r.suffix+'\')">'+r.label+'</span>';
+  }).join('');
+}
+
+function switchRecap(date, suffix){
+  currentSuffix = suffix;
+  loadRecap(date, suffix);
+  renderTabs(date, data.recaps[date]);
+}
+
+function onDateChange(){
+  switchDate(document.getElementById('dateSelect').value);
+}
+
+function goPrev(){
+  var idx = data.dates.indexOf(currentDate);
+  if(idx < data.dates.length - 1){
+    currentDate = data.dates[idx + 1];
+    document.getElementById('dateSelect').value = currentDate;
+    switchDate(currentDate);
+  }
+}
+
+function goNext(){
+  var idx = data.dates.indexOf(currentDate);
+  if(idx > 0){
+    currentDate = data.dates[idx - 1];
+    document.getElementById('dateSelect').value = currentDate;
+    switchDate(currentDate);
+  }
+}
+
+function onFrameLoad(){
+  // 初始加载后无需额外处理
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+{
+  "dates": [
+    "20260615",
+    "20260612",
+    "20260611",
+    "20260610",
+    "20260609",
+    "20260608",
+    "20260605",
+    "20260604",
+    "20260603",
+    "20260602",
+    "20260601",
+    "20260529",
+    "20260528",
+    "20260527",
+    "20260525",
+    "20260522"
+  ],
+  "latest": "20260615",
+  "recaps": {
+    "20260615": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260615/recap.html",
+          "txt": "20260615/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260612": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260612/recap.html",
+          "txt": "20260612/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260611": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260611/recap.html",
+          "txt": "20260611/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260610": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260610/recap.html",
+          "txt": "20260610/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260610/premarket"
+    },
+    "20260609": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260609/recap.html",
+          "txt": "20260609/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260608": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260608/recap.html",
+          "txt": "20260608/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260608/premarket"
+    },
+    "20260605": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260605/recap.html",
+          "txt": "20260605/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260605/premarket"
+    },
+    "20260604": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260604/recap.html",
+          "txt": "20260604/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260604/premarket"
+    },
+    "20260603": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260603/recap.html",
+          "txt": "20260603/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260603/premarket"
+    },
+    "20260602": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260602/recap.html",
+          "txt": "20260602/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260602/premarket"
+    },
+    "20260601": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260601/recap.html",
+          "txt": "20260601/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260529": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260529/recap.html",
+          "txt": "20260529/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260529/premarket"
+    },
+    "20260528": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260528/recap.html",
+          "txt": "20260528/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260528/premarket"
+    },
+    "20260527": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260527/recap.html",
+          "txt": "20260527/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    },
+    "20260525": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260525/recap.html",
+          "txt": "20260525/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": "20260525/premarket"
+    },
+    "20260522": {
+      "recaps": [
+        {
+          "suffix": "",
+          "label": "复盘",
+          "html": "20260522/recap.html",
+          "txt": "20260522/recap.txt"
+        }
+      ],
+      "default": "",
+      "premarket": null
+    }
+  }
+}
