@@ -470,10 +470,18 @@ def main():
 
     commit_msg += "\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
 
-    run_cmd(
-        ["git", "commit", "-m", commit_msg],
-        description="git commit",
+    # 检查是否有已暂存的变更，无变更时跳过提交
+    result = subprocess.run(
+        ["git", "diff", "--cached", "--quiet"],
+        cwd=REPO_ROOT,
     )
+    if result.returncode == 0:
+        print("\n[SKIP] 无新增变更，跳过 git commit")
+    else:
+        run_cmd(
+            ["git", "commit", "-m", commit_msg],
+            description="git commit",
+        )
 
     if args.no_push:
         print("\n[SKIP] 跳过推送（--no-push）")
