@@ -27,9 +27,15 @@
           "label": "复盘 01",
           "html": "20260616/recap_01.html",
           "txt": "20260616/recap_01.txt"
+        },
+        {
+          "suffix": "02",
+          "label": "复盘 02",
+          "html": "20260616/recap_02.html",
+          "txt": "20260616/recap_02.txt"
         }
       ],
-      "default": "01",
+      "default": "02",
       "premarket": null
     },
     "20260615": {
