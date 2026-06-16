@@ -29,6 +29,10 @@ import sys
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPTS_DIR)
 
+# 国内网络到 GitHub HTTPS 推送时，默认 1MB buffer 太小，
+# 分包过多易触发 "RPC failed; curl 65 Recv failure"，加大后可一次发送完成
+GIT_HTTP_POST_BUFFER = 524288000  # 500MB
+
 INDEX_HTML = os.path.join(REPO_ROOT, "index.html")
 INDEX_JSON = os.path.join(REPO_ROOT, "recap_index.json")
 
@@ -479,7 +483,7 @@ def main():
             description="git pull --rebase（同步远程）",
         )
         run_cmd(
-            ["git", "push", "origin", "master"],
+            ["git", "-c", f"http.postBuffer={GIT_HTTP_POST_BUFFER}", "push", "origin", "master"],
             description="git push",
         )
 
