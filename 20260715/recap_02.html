@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A股市场复盘 2026-07-15 15:39</title>
+<style>
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background:#1a1a2e; color:#e0e0e0; padding:20px; }
+  .header { text-align:center; padding:24px 0 16px; border-bottom:2px solid #333; margin-bottom:20px; }
+  .header h1 { font-size:26px; color:#fff; }
+  .header .date { color:#888; font-size:14px; margin-top:4px; }
+  .dashboard { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+  .card { background:#16213e; border-radius:8px; padding:16px; }
+  .card .label { color:#888; font-size:12px; margin-bottom:4px; }
+  .card .value { font-size:28px; font-weight:bold; }
+  .card .sub { color:#888; font-size:12px; margin-top:4px; }
+  .red { color:#e74c3c; }
+  .green { color:#27ae60; }
+  .yellow { color:#f39c12; }
+  .white { color:#ecf0f1; }
+  .section { background:#16213e; border-radius:8px; padding:20px; margin-bottom:16px; }
+  .section h2 { font-size:18px; color:#fff; border-bottom:1px solid #333; padding-bottom:10px; margin-bottom:14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:#888; padding:6px 8px; border-bottom:1px solid #333; font-weight:normal; }
+  td { padding:6px 8px; border-bottom:1px solid #222; }
+  tr:hover { background:rgba(255,255,255,0.03); }
+  .bar-wrap { display:flex; align-items:center; gap:8px; }
+  .bar { height:18px; border-radius:3px; transition:width 0.3s; }
+  .bar-red { background:linear-gradient(90deg,#c0392b,#e74c3c); }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .tag { display:inline-block; padding:2px 6px; border-radius:3px; font-size:11px; margin:1px 2px; }
+  .tag-up { background:#c0392b; color:#fff; }
+  .tag-down { background:#27ae60; color:#fff; }
+  .tag-strong { background:#e67e22; color:#fff; }
+  .summary { font-size:14px; line-height:2; }
+
+  /* 金字塔连板 */
+  .pyramid { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .pyramid-level { text-align:center; padding:8px 16px; border-radius:6px; background:rgba(255,255,255,0.04); }
+  .pyramid-level .num { font-size:24px; font-weight:bold; color:#f39c12; }
+  .pyramid-level .names { color:#bbb; font-size:13px; margin-top:4px; }
+
+  /* 碰撞泡泡图 */
+  .bubble-wrap { position:relative; text-align:center; }
+  .bubble-wrap canvas { max-width:100%; cursor:pointer; border-radius:6px; }
+  .bubble-tooltip { display:none; position:absolute; background:rgba(15,15,30,0.95); color:#fff; padding:10px 14px; border-radius:6px; font-size:12px; pointer-events:none; z-index:10; white-space:nowrap; line-height:1.7; border:1px solid rgba(255,255,255,0.12); box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+  .disclaimer { color:#666; font-size:11px; margin-top:10px; text-align:left; }
+
+  /* 可展开 */
+  .expand-btn { display:block; width:100%; text-align:center; padding:8px; margin-top:8px; background:rgba(255,255,255,0.04); color:#888; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
+  .expand-btn:hover { background:rgba(255,255,255,0.08); color:#ccc; }
+  .expandable { display:none; }
+  .expandable.show { display:table-row; }
+
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>A股市场复盘</h1>
+  <div class="date">2026-07-15 15:39</div>
+</div>
+
+<!-- 仪表盘 -->
+<div class="dashboard">
+  <div class="card">
+    <div class="label">涨跌分布</div>
+    <div class="value"><span class="red counter" data-target="3198">0</span> <span style="font-size:18px;color:#888;">/</span> <span class="green counter" data-target="1929">0</span></div>
+    <div class="sub">涨跌比 1.7:1</div>
+  </div>
+  <div class="card">
+    <div class="label">成交额</div>
+    <div class="value white"><span class="counter" data-target="25709">0</span><span style="font-size:16px;">亿</span></div>
+    <div class="sub">全市场</div>
+  </div>
+  <div class="card">
+    <div class="label">涨停 / 跌停</div>
+    <div class="value"><span class="red counter" data-target="81">0</span> <span style="color:#888;">/</span> <span class="green">54</span></div>
+    <div class="sub">均涨幅 +0.26%  中位 +0.82%</div>
+  </div>
+  <div class="card">
+    <div class="label">资金主攻</div>
+    <div class="value yellow" style="font-size:20px;">化学制剂</div>
+    <div class="sub">6家涨停</div>
+  </div>
+</div>
+
+<!-- 板块热力图 - 碰撞泡泡 -->
+<div class="section">
+  <h2>板块热力图</h2>
+  <div class="bubble-wrap">
+    <canvas id="bubbleChart" width="750" height="450"></canvas>
+    <div id="bubbleTooltip" class="bubble-tooltip"></div>
+  </div>
+  <p class="disclaimer">* 行业分类基于同花顺细分行业。泡泡大小=板块总市值，颜色=平均涨跌幅等级。鼠标悬停查看详情。</p>
+</div>
+
+<div class="grid2">
+<!-- 连板梯队 - 金字塔 -->
+<div class="section">
+  <h2>连板梯队</h2>
+  <div class="pyramid">
+    <div class="pyramid-level" style="min-width:100%;">
+      <div class="num">5板 ×3</div>
+      <div class="names"><span class='tag tag-up'>恒尚节能</span>、<span class='tag tag-up'>ST龙大</span>、<span class='tag tag-up'>*ST发展</span></div>
+    </div>
+    <div class="pyramid-level" style="min-width:90%;">
+      <div class="num">4板 ×2</div>
+      <div class="names"><span class='tag tag-up'>哈药股份</span>、<span class='tag tag-up'>艾艾精工</span></div>
+    </div>
+    <div class="pyramid-level" style="min-width:80%;">
+      <div class="num">3板 ×4</div>
+      <div class="names"><span class='tag tag-up'>凯莱英</span>、<span class='tag tag-up'>昭衍新药</span>、<span class='tag tag-up'>信通电子</span>、<span class='tag tag-up'>ST同德</span></div>
+    </div>
+    <div class="pyramid-level" style="min-width:70%;">
+      <div class="num">2板 ×17</div>
+      <div class="names"><span class='tag tag-up'>迪哲医药-U</span>、<span class='tag tag-up'>万邦医药</span>、<span class='tag tag-up'>赤天化</span>、<span class='tag tag-up'>美盈森</span>、<span class='tag tag-up'>哈三联</span>、<span class='tag tag-up'>人民同泰</span> 等17家</div>
+    </div>
+  </div>
+</div>
+
+<!-- 成交额 TOP（可展开） -->
+<div class="section" id="sec-amt">
+  <h2>成交额 TOP10</h2>
+  <table>
+    <tr>
+      <td style="color:#888;">1</td>
+      <td>东山精密</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+0.81%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:100.0%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">373亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">2</td>
+      <td>兆易创新</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#27ae60;">-2.09%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:87.2158558379432%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">325亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">3</td>
+      <td>中际旭创</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-1.24%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:78.59261221957854%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">293亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">4</td>
+      <td>新易盛</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-2.25%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:66.97086476921588%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">250亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">5</td>
+      <td>通富微电</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+1.08%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:63.02423317632301%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">235亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">6</td>
+      <td>长电科技</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#27ae60;">-9.97%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:61.64312012867732%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">230亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">7</td>
+      <td>京东方Ａ</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-9.12%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:53.028967212491715%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">198亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">8</td>
+      <td>佰维存储</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-15.06%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:45.09030151177814%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">168亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">9</td>
+      <td>亨通光电</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#27ae60;">-4.48%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:42.683297221031125%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">159亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">10</td>
+      <td>药明康德</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+3.13%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:40.74577254166692%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">152亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">11</td>
+      <td>华天科技</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-10.01%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:40.54146390848983%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">151亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">12</td>
+      <td>生益科技</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+3.06%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:39.32420627192424%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">147亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">13</td>
+      <td>澜起科技</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-6.41%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:37.312667655952644%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">139亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">14</td>
+      <td>宁德时代</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#e74c3c;">+2.47%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:36.073513961407535%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">134亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">15</td>
+      <td>寒武纪</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-4.50%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:34.84112260053237%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">130亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">16</td>
+      <td>中芯国际</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-4.57%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:34.68900860833401%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">129亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">17</td>
+      <td>浪潮信息</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-0.29%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:34.150516422741326%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">127亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">18</td>
+      <td>沪电股份</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+0.07%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:32.38475850779143%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">121亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">19</td>
+      <td>紫光股份</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-3.92%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:31.690736673787494%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">118亿</td>
+    </tr>
+    <tr class="expandable" data-group="amt">
+      <td style="color:#888;">20</td>
+      <td>江波龙</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-9.38%</td>
+      <td style="width:100%;">
+        <div class="bar-wrap"><div class="bar bar-red" style="width:31.41287440970826%;opacity:0.6;"></div></div>
+      </td>
+      <td style="text-align:right;">117亿</td>
+    </tr>
+  </table>
+  <button class="expand-btn" onclick="toggleGroup('amt', this)">展开全部</button>
+</div>
+</div>
+
+<!-- 分歧观察池（可展开） -->
+<div class="section" id="sec-div">
+  <h2>分歧观察池</h2>
+  <table>
+    <tr><th>名称</th><th>代码</th><th>板块</th><th>涨幅</th><th>换手</th><th>成交</th></tr>
+    <tr>
+      <td>万邦医药</td><td>SZ301520</td><td style="font-size:11px;">创业板</td>
+      <td style="color:#e74c3c;">+20.00%</td>
+      <td>54.1%</td>
+      <td style="text-align:right;">9.6亿</td>
+    </tr>
+    <tr>
+      <td>中赋科技</td><td>SZ300692</td><td style="font-size:11px;">创业板</td>
+      <td style="color:#e74c3c;">+18.22%</td>
+      <td>19.9%</td>
+      <td style="text-align:right;">9.6亿</td>
+    </tr>
+    <tr>
+      <td>美诺华</td><td>SH603538</td><td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+10.01%</td>
+      <td>30.4%</td>
+      <td style="text-align:right;">38.7亿</td>
+    </tr>
+    <tr>
+      <td>灵康药业</td><td>SH603669</td><td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+9.59%</td>
+      <td>14.7%</td>
+      <td style="text-align:right;">7.9亿</td>
+    </tr>
+    <tr>
+      <td>汉森制药</td><td>SZ002412</td><td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+9.49%</td>
+      <td>12.5%</td>
+      <td style="text-align:right;">4.2亿</td>
+    </tr>
+    <tr>
+      <td>海思科</td><td>SZ002653</td><td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+9.45%</td>
+      <td>4.0%</td>
+      <td style="text-align:right;">15.7亿</td>
+    </tr>
+    <tr>
+      <td>盐津铺子</td><td>SZ002847</td><td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+8.41%</td>
+      <td>3.3%</td>
+      <td style="text-align:right;">3.7亿</td>
+    </tr>
+    <tr>
+      <td>拉芳家化</td><td>SH603630</td><td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+8.35%</td>
+      <td>7.4%</td>
+      <td style="text-align:right;">2.3亿</td>
+    </tr>
+    <tr>
+      <td>中金公司</td><td>SH601995</td><td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+8.18%</td>
+      <td>2.7%</td>
+      <td style="text-align:right;">29.7亿</td>
+    </tr>
+    <tr>
+      <td>沃华医药</td><td>SZ002107</td><td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+7.92%</td>
+      <td>5.8%</td>
+      <td style="text-align:right;">2.2亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>*ST沐邦</td><td>SH603398</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.72%</td>
+      <td>2.9%</td>
+      <td style="text-align:right;">1.5亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST远智</td><td>SZ002689</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.63%</td>
+      <td>0.8%</td>
+      <td style="text-align:right;">0.2亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>*ST尼雅</td><td>SH600084</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.46%</td>
+      <td>0.7%</td>
+      <td style="text-align:right;">0.3亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST惠程</td><td>SZ002168</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.21%</td>
+      <td>1.2%</td>
+      <td style="text-align:right;">0.4亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>*ST未名</td><td>SZ002581</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.19%</td>
+      <td>5.2%</td>
+      <td style="text-align:right;">0.8亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST华铭</td><td>SZ300462</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+4.15%</td>
+      <td>1.0%</td>
+      <td style="text-align:right;">0.1亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST南新</td><td>SH688189</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+3.90%</td>
+      <td>6.9%</td>
+      <td style="text-align:right;">1.6亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>*ST瑞茂</td><td>SH600180</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+3.82%</td>
+      <td>4.8%</td>
+      <td style="text-align:right;">0.8亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST迪瑞</td><td>SZ300396</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+3.77%</td>
+      <td>1.1%</td>
+      <td style="text-align:right;">0.2亿</td>
+    </tr>
+    <tr class="expandable" data-group="div">
+      <td>ST天圣</td><td>SZ002872</td><td style="font-size:11px;">ST板块</td>
+      <td style="color:#e74c3c;">+3.75%</td>
+      <td>2.0%</td>
+      <td style="text-align:right;">0.2亿</td>
+    </tr>
+  </table>
+  <button class="expand-btn" onclick="toggleGroup('div', this)">展开全部</button>
+</div>
+<div class="grid2">
+<div class="section" id="sec-5up">
+  <h2>5日涨幅 TOP10</h2>
+  <table>
+    <tr><td style="color:#888;">1</td><td>恒尚节能</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+55.43%</td><td style="color:#888;font-size:11px;">今+10.01%</td></tr>
+    <tr><td style="color:#888;">2</td><td>迪哲医药-U</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#e74c3c;">+49.62%</td><td style="color:#888;font-size:11px;">今+20.01%</td></tr>
+    <tr><td style="color:#888;">3</td><td>艾艾精工</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+49.12%</td><td style="color:#888;font-size:11px;">今+10.01%</td></tr>
+    <tr><td style="color:#888;">4</td><td>哈药股份</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+45.31%</td><td style="color:#888;font-size:11px;">今+10.05%</td></tr>
+    <tr><td style="color:#888;">5</td><td>陇神戎发</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#e74c3c;">+43.05%</td><td style="color:#888;font-size:11px;">今+3.15%</td></tr>
+    <tr><td style="color:#888;">6</td><td>立方制药</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+41.45%</td><td style="color:#888;font-size:11px;">今+5.34%</td></tr>
+    <tr><td style="color:#888;">7</td><td>信通电子</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#e74c3c;">+38.94%</td><td style="color:#888;font-size:11px;">今+9.99%</td></tr>
+    <tr><td style="color:#888;">8</td><td>万邦医药</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#e74c3c;">+37.55%</td><td style="color:#888;font-size:11px;">今+20.00%</td></tr>
+    <tr><td style="color:#888;">9</td><td>灵康药业</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+34.27%</td><td style="color:#888;font-size:11px;">今+9.59%</td></tr>
+    <tr><td style="color:#888;">10</td><td>昭衍新药</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#e74c3c;">+33.56%</td><td style="color:#888;font-size:11px;">今+10.00%</td></tr>
+  </table>
+  <button class="expand-btn" onclick="toggleGroup('5up', this)">展开全部</button>
+</div>
+<div class="section" id="sec-5dn">
+  <h2>5日跌幅 TOP10</h2>
+  <table>
+    <tr><td style="color:#888;">1</td><td>*ST萃华</td>
+      <td style="font-size:11px;">ST板块</td>
+      <td style="color:#27ae60;">-40.79%</td><td style="color:#888;font-size:11px;">今-9.52%</td></tr>
+    <tr><td style="color:#888;">2</td><td>世名科技</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-37.47%</td><td style="color:#888;font-size:11px;">今-6.63%</td></tr>
+    <tr><td style="color:#888;">3</td><td>*ST卓然</td>
+      <td style="font-size:11px;">ST板块</td>
+      <td style="color:#27ae60;">-32.61%</td><td style="color:#888;font-size:11px;">今-2.45%</td></tr>
+    <tr><td style="color:#888;">4</td><td>天振股份</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-32.18%</td><td style="color:#888;font-size:11px;">今-2.16%</td></tr>
+    <tr><td style="color:#888;">5</td><td>光格科技</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-29.19%</td><td style="color:#888;font-size:11px;">今-4.97%</td></tr>
+    <tr><td style="color:#888;">6</td><td>银河微电</td>
+      <td style="font-size:11px;">科创板</td>
+      <td style="color:#27ae60;">-29.10%</td><td style="color:#888;font-size:11px;">今-10.98%</td></tr>
+    <tr><td style="color:#888;">7</td><td>庄园牧场</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-28.59%</td><td style="color:#888;font-size:11px;">今+1.10%</td></tr>
+    <tr><td style="color:#888;">8</td><td>露笑科技</td>
+      <td style="font-size:11px;">深证主板</td>
+      <td style="color:#27ae60;">-28.06%</td><td style="color:#888;font-size:11px;">今-3.60%</td></tr>
+    <tr><td style="color:#888;">9</td><td>龙蟠科技</td>
+      <td style="font-size:11px;">上证主板</td>
+      <td style="color:#27ae60;">-27.68%</td><td style="color:#888;font-size:11px;">今-4.95%</td></tr>
+    <tr><td style="color:#888;">10</td><td>威尔高</td>
+      <td style="font-size:11px;">创业板</td>
+      <td style="color:#27ae60;">-27.25%</td><td style="color:#888;font-size:11px;">今-8.28%</td></tr>
+  </table>
+  <button class="expand-btn" onclick="toggleGroup('5dn', this)">展开全部</button>
+</div>
+</div>
+
+<!-- 高换手率（可展开） -->
+<div class="section" id="sec-turnover">
+  <h2>高换手率 TOP10</h2>
+  <table>
+    <tr><th>名称</th><th>代码</th><th>板块</th><th>换手率</th><th>涨幅</th><th>成交</th></tr>
+    <tr>
+      <td style="color:#888;">1</td><td>万邦医药</td><td style="font-size:11px;">创业板</td>
+      <td>54.1%</td>
+      <td style="color:#e74c3c;">+20.00%</td>
+      <td style="text-align:right;">9.6亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">2</td><td>C托伦斯</td><td style="font-size:11px;">创业板</td>
+      <td>53.4%</td>
+      <td style="color:#27ae60;">-21.99%</td>
+      <td style="text-align:right;">25.2亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">3</td><td>通源石油</td><td style="font-size:11px;">创业板</td>
+      <td>40.2%</td>
+      <td style="color:#27ae60;">-4.83%</td>
+      <td style="text-align:right;">25.6亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">4</td><td>*ST萃华</td><td style="font-size:11px;">ST板块</td>
+      <td>38.6%</td>
+      <td style="color:#27ae60;">-9.52%</td>
+      <td style="text-align:right;">1.9亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">5</td><td>美诺华</td><td style="font-size:11px;">上证主板</td>
+      <td>30.4%</td>
+      <td style="color:#e74c3c;">+10.01%</td>
+      <td style="text-align:right;">38.7亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">6</td><td>陇神戎发</td><td style="font-size:11px;">创业板</td>
+      <td>30.1%</td>
+      <td style="color:#e74c3c;">+3.15%</td>
+      <td style="text-align:right;">9.9亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">7</td><td>药易购</td><td style="font-size:11px;">创业板</td>
+      <td>29.6%</td>
+      <td style="color:#e74c3c;">+9.26%</td>
+      <td style="text-align:right;">4.8亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">8</td><td>建发致新</td><td style="font-size:11px;">创业板</td>
+      <td>28.2%</td>
+      <td style="color:#27ae60;">-0.73%</td>
+      <td style="text-align:right;">3.7亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">9</td><td>立方制药</td><td style="font-size:11px;">深证主板</td>
+      <td>27.5%</td>
+      <td style="color:#e74c3c;">+5.34%</td>
+      <td style="text-align:right;">9.7亿</td>
+    </tr>
+    <tr>
+      <td style="color:#888;">10</td><td>中百集团</td><td style="font-size:11px;">深证主板</td>
+      <td>24.1%</td>
+      <td style="color:#e74c3c;">+1.78%</td>
+      <td style="text-align:right;">10.8亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">11</td><td>惠科股份</td><td style="font-size:11px;">深证主板</td>
+      <td>23.9%</td>
+      <td style="color:#27ae60;">-9.77%</td>
+      <td style="text-align:right;">28.6亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">12</td><td>汇金科技</td><td style="font-size:11px;">创业板</td>
+      <td>21.9%</td>
+      <td style="color:#e74c3c;">+13.12%</td>
+      <td style="text-align:right;">9.1亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">13</td><td>中远通</td><td style="font-size:11px;">创业板</td>
+      <td>21.7%</td>
+      <td style="color:#e74c3c;">+3.50%</td>
+      <td style="text-align:right;">3.1亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">14</td><td>实益达</td><td style="font-size:11px;">深证主板</td>
+      <td>20.7%</td>
+      <td style="color:#27ae60;">-9.96%</td>
+      <td style="text-align:right;">7.3亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">15</td><td>红板科技</td><td style="font-size:11px;">上证主板</td>
+      <td>20.1%</td>
+      <td style="color:#27ae60;">-10.00%</td>
+      <td style="text-align:right;">14.1亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">16</td><td>中赋科技</td><td style="font-size:11px;">创业板</td>
+      <td>19.9%</td>
+      <td style="color:#e74c3c;">+18.22%</td>
+      <td style="text-align:right;">9.6亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">17</td><td>沐曦股份-U</td><td style="font-size:11px;">科创板</td>
+      <td>19.8%</td>
+      <td style="color:#27ae60;">-11.37%</td>
+      <td style="text-align:right;">32.2亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">18</td><td>天海电子</td><td style="font-size:11px;">深证主板</td>
+      <td>19.5%</td>
+      <td style="color:#27ae60;">-3.82%</td>
+      <td style="text-align:right;">4.5亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">19</td><td>臻宝科技</td><td style="font-size:11px;">科创板</td>
+      <td>19.5%</td>
+      <td style="color:#27ae60;">-12.54%</td>
+      <td style="text-align:right;">21.9亿</td>
+    </tr>
+    <tr class="expandable" data-group="turnover">
+      <td style="color:#888;">20</td><td>通富微电</td><td style="font-size:11px;">深证主板</td>
+      <td>19.3%</td>
+      <td style="color:#e74c3c;">+1.08%</td>
+      <td style="text-align:right;">234.8亿</td>
+    </tr>
+  </table>
+  <button class="expand-btn" onclick="toggleGroup('turnover', this)">展开全部</button>
+</div>
+
+<!-- 板块健康度评估 -->
+<div class="section">
+  <h2>板块健康度评估 <span style="font-size:12px;color:#888;">（PE水位 + 量比趋势 + 封单强度）</span></h2>
+  <p style="color:#666;font-size:12px;margin-bottom:8px;">全市场PE中位数: {sorted([s['pe'] for s in stocks if s['pe'] > 0])[len([s['pe'] for s in stocks if s['pe'] > 0])//2] if [s['pe'] for s in stocks if s['pe'] > 0] else 0:.1f}</p>
+  <table>
+    <tr><th>板块</th><th>家数</th><th>PE水位</th><th>量比</th><th>量趋势</th><th>换手</th><th>封单强度</th><th>主力</th><th>评分</th></tr>
+    <tr>
+      <td>预加工食品</td><td>9</td>
+      <td><span style="color:#4caf50;">24.2 偏便宜</span></td>
+      <td>1.26</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>1.9%</td>
+      <td><span style="color:#ff9800;">6643万 封单适中</span></td>
+      <td style="color:#4caf50;">-0.03%</td>
+      <td><b style="color:#ff9800;">9.5</b></td>
+    </tr>
+    <tr>
+      <td>印染</td><td>4</td>
+      <td><span style="color:#4caf50;">25.7 偏便宜</span></td>
+      <td>1.25</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>5.2%</td>
+      <td><span style="color:#ff9800;">3702万 封单适中</span></td>
+      <td style="color:#ff5252;">+0.17%</td>
+      <td><b style="color:#ff9800;">9.5</b></td>
+    </tr>
+    <tr>
+      <td>宠物食品</td><td>3</td>
+      <td><span style="color:#4caf50;">27.2 偏便宜</span></td>
+      <td>1.62</td>
+      <td><span style="color:#ff1744;">显著放量</span></td>
+      <td>3.4%</td>
+      <td><span style="color:#ff9800;">6402万 封单适中</span></td>
+      <td style="color:#ff5252;">+0.29%</td>
+      <td><b style="color:#ff9800;">9.5</b></td>
+    </tr>
+    <tr>
+      <td>氮肥</td><td>5</td>
+      <td><span style="color:#2e7d32;">14.1 低估</span></td>
+      <td>1.39</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>4.2%</td>
+      <td><span style="color:#80cbc4;">4423万 封单薄弱</span></td>
+      <td style="color:#ff5252;">+0.22%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>普钢</td><td>23</td>
+      <td><span style="color:#4caf50;">19.6 偏便宜</span></td>
+      <td>1.26</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>1.1%</td>
+      <td><span style="color:#80cbc4;">3862万 封单薄弱</span></td>
+      <td style="color:#4caf50;">-0.03%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>多元金融</td><td>26</td>
+      <td><span style="color:#4caf50;">20.4 偏便宜</span></td>
+      <td>1.28</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>1.6%</td>
+      <td><span style="color:#80cbc4;">2324万 封单薄弱</span></td>
+      <td style="color:#4caf50;">-0.05%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>医药流通</td><td>24</td>
+      <td><span style="color:#4caf50;">22.1 偏便宜</span></td>
+      <td>1.88</td>
+      <td><span style="color:#ff1744;">显著放量</span></td>
+      <td>6.1%</td>
+      <td><span style="color:#80cbc4;">5326万 封单薄弱</span></td>
+      <td style="color:#4caf50;">-0.01%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>白酒</td><td>19</td>
+      <td><span style="color:#4caf50;">23.5 偏便宜</span></td>
+      <td>2.00</td>
+      <td><span style="color:#ff1744;">显著放量</span></td>
+      <td>2.6%</td>
+      <td><span style="color:#80cbc4;">1.1亿 封单薄弱</span></td>
+      <td style="color:#ff5252;">+0.14%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>医疗美容</td><td>4</td>
+      <td><span style="color:#4caf50;">24.9 偏便宜</span></td>
+      <td>2.02</td>
+      <td><span style="color:#ff1744;">显著放量</span></td>
+      <td>2.5%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.12%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>休闲食品</td><td>22</td>
+      <td><span style="color:#4caf50;">24.5 偏便宜</span></td>
+      <td>1.39</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>2.6%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.01%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>证券</td><td>50</td>
+      <td><span style="color:#4caf50;">20.6 偏便宜</span></td>
+      <td>1.44</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>1.5%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.07%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>农药</td><td>29</td>
+      <td><span style="color:#4caf50;">23.1 偏便宜</span></td>
+      <td>1.24</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>2.5%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#4caf50;">-0.01%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>成品家居</td><td>16</td>
+      <td><span style="color:#4caf50;">23.9 偏便宜</span></td>
+      <td>1.23</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>2.6%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.02%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>专业连锁</td><td>7</td>
+      <td><span style="color:#4caf50;">27.6 偏便宜</span></td>
+      <td>1.23</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>2.2%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.04%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+    <tr>
+      <td>贸易</td><td>14</td>
+      <td><span style="color:#4caf50;">29.1 偏便宜</span></td>
+      <td>1.22</td>
+      <td><span style="color:#ff5722;">温和放量</span></td>
+      <td>2.1%</td>
+      <td><span style="color:#78909c;">- 无封单</span></td>
+      <td style="color:#ff5252;">+0.06%</td>
+      <td><b style="color:#ff9800;">8.5</b></td>
+    </tr>
+  </table>
+  <p style="color:#666;font-size:11px;margin-top:8px;">* PE水位=板块PE中位数/全市场PE中位数（横截面对比）| 量比=成交量/5日均量 | 封单强度=涨停股封单额/板块总成交额 | 评分0-10综合三维度</p>
+</div>
+
+<!-- 渗透压视角 -->
+<div class="section">
+  <h2>渗透压视角 <span style="font-size:12px;color:#888;">（浓度差 → 资金流向倾向）</span></h2>
+  <p style="color:#666;font-size:12px;margin-bottom:8px;">
+    全市场平均浓度 C<sub>pool</sub> = <b>{C_pool:.3f}</b> &nbsp;|&nbsp;
+    公式: C<sub>i</sub> = 20%估值吸引力 + 60%资金动量 + 20%封单信号
+  </p>
+  <table>
+    <tr><th>板块</th><th>浓度 C<sub>i</sub></th><th>ΔP</th><th>流向</th><th>家数</th><th>涨停</th><th>换手(膜)</th><th>量比</th><th>主力</th></tr>
+    <tr>
+      <td>宠物食品</td>
+      <td><b>0.870</b></td>
+      <td style="color:#e74c3c;">+0.787</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>3</td><td>1</td>
+      <td>3.4%</td><td>1.62</td>
+      <td style="color:#ff5252;">+0.29%</td>
+    </tr>
+    <tr>
+      <td>氮肥</td>
+      <td><b>0.787</b></td>
+      <td style="color:#e74c3c;">+0.704</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>5</td><td>1</td>
+      <td>4.2%</td><td>1.39</td>
+      <td style="color:#ff5252;">+0.22%</td>
+    </tr>
+    <tr>
+      <td>印染</td>
+      <td><b>0.771</b></td>
+      <td style="color:#e74c3c;">+0.688</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>4</td><td>1</td>
+      <td>5.2%</td><td>1.25</td>
+      <td style="color:#ff5252;">+0.17%</td>
+    </tr>
+    <tr>
+      <td>游戏</td>
+      <td><b>0.687</b></td>
+      <td style="color:#e74c3c;">+0.604</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>24</td><td>2</td>
+      <td>4.4%</td><td>1.03</td>
+      <td style="color:#ff5252;">+0.23%</td>
+    </tr>
+    <tr>
+      <td>互联网电商</td>
+      <td><b>0.680</b></td>
+      <td style="color:#e74c3c;">+0.597</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>19</td><td>3</td>
+      <td>4.4%</td><td>1.42</td>
+      <td style="color:#ff5252;">+0.20%</td>
+    </tr>
+    <tr>
+      <td>白酒</td>
+      <td><b>0.662</b></td>
+      <td style="color:#e74c3c;">+0.579</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>19</td><td>2</td>
+      <td>2.6%</td><td>2.00</td>
+      <td style="color:#ff5252;">+0.14%</td>
+    </tr>
+    <tr>
+      <td>医疗研发外包</td>
+      <td><b>0.657</b></td>
+      <td style="color:#e74c3c;">+0.574</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>30</td><td>5</td>
+      <td>11.3%</td><td>1.91</td>
+      <td style="color:#ff5252;">+0.79%</td>
+    </tr>
+    <tr>
+      <td>预加工食品</td>
+      <td><b>0.642</b></td>
+      <td style="color:#e74c3c;">+0.559</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>9</td><td>1</td>
+      <td>1.9%</td><td>1.26</td>
+      <td style="color:#4caf50;">-0.03%</td>
+    </tr>
+    <tr>
+      <td>冰洗</td>
+      <td><b>0.595</b></td>
+      <td style="color:#e74c3c;">+0.512</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>7</td><td>1</td>
+      <td>1.7%</td><td>1.20</td>
+      <td style="color:#4caf50;">+0.00%</td>
+    </tr>
+    <tr>
+      <td>化学制剂</td>
+      <td><b>0.589</b></td>
+      <td style="color:#e74c3c;">+0.506</td>
+      <td><span class="tag tag-up">强吸水</span></td>
+      <td>107</td><td>6</td>
+      <td>5.7%</td><td>1.65</td>
+      <td style="color:#ff5252;">+0.24%</td>
+    </tr>
+    <tr><td colspan="9" style="color:#888;text-align:center;border-bottom:1px solid #444;">—— 失水端（ΔP < 0）——</td></tr>
+    <tr>
+      <td>数字芯片设计</td>
+      <td><b>-0.228</b></td>
+      <td style="color:#4caf50;">-0.311</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>53</td><td>0</td>
+      <td>5.1%</td><td>0.82</td>
+      <td style="color:#4caf50;">-0.27%</td>
+    </tr>
+    <tr>
+      <td>航天装备</td>
+      <td><b>-0.256</b></td>
+      <td style="color:#4caf50;">-0.339</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>10</td><td>0</td>
+      <td>5.0%</td><td>0.84</td>
+      <td style="color:#4caf50;">-0.32%</td>
+    </tr>
+    <tr>
+      <td>半导体材料</td>
+      <td><b>-0.294</b></td>
+      <td style="color:#4caf50;">-0.377</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>25</td><td>0</td>
+      <td>8.7%</td><td>0.80</td>
+      <td style="color:#4caf50;">-0.35%</td>
+    </tr>
+    <tr>
+      <td>半导体设备</td>
+      <td><b>-0.313</b></td>
+      <td style="color:#4caf50;">-0.396</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>24</td><td>0</td>
+      <td>6.8%</td><td>0.86</td>
+      <td style="color:#4caf50;">-0.43%</td>
+    </tr>
+    <tr>
+      <td>集成电路封测</td>
+      <td><b>-0.361</b></td>
+      <td style="color:#4caf50;">-0.444</td>
+      <td><span class="tag tag-down">强失水</span></td>
+      <td>13</td><td>0</td>
+      <td>11.6%</td><td>0.94</td>
+      <td style="color:#4caf50;">-0.80%</td>
+    </tr>
+  </table>
+  <p style="color:#666;font-size:11px;margin-top:8px;">* C<sub>i</sub>=浓度得分 | ΔP=C<sub>i</sub>-C<sub>pool</sub>（渗透压差）| 换手率≈膜通透性 | 量比/主力≈流速观测 | ΔP>0预测资金流入，ΔP<0预测流出</p>
+</div>
+
+<!-- 总结 -->
+<div class="section">
+  <h2>市场总结</h2>
+  <div class="summary">
+    <p>市场情绪: <b style="color:#f39c12;">偏强，多数上涨</b> | 涨跌比 <span class="red">3198</span>:<span class="green">1929</span></p>
+    <p>涨停 <span class="red">81</span> 家 | 跌停 <span class="green">54</span> 家 | 成交 <b>25,709</b> 亿</p>
+    <p>最高连板: <b class='yellow'>5板</b></p>
+    <p>主线: <b>化学制剂</b>（6家涨停, 成交30亿）</p>
+    <p>健康度最佳: <b>预加工食品</b>（评分9.5, PE偏便宜）</p>
+    <p>渗透压最强: <b>宠物食品</b>（ΔP=+0.787, 强吸水）</p>
+    <p style="color:#666;margin-top:12px;font-size:12px;">免责声明: 以上分析仅供参考，不构成投资建议。</p>
+  </div>
+</div>
+
+<script>
+// ===== 数据 =====
+var BUBBLE_DATA = [{"sector": "国有大型银行", "count": 6, "limit_ups": 0, "rising": 4, "up_ratio": 66.7, "avg_chg": 0.27, "total_mcap": 10631424170000.0, "avg_turnover": 0.42, "leaders": ["邮储银行", "交通银行", "中国银行"], "pe_label": "低估", "pe_color": "#2e7d32", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 7.0}, {"sector": "数字芯片设计", "count": 53, "limit_ups": 0, "rising": 4, "up_ratio": 7.5, "avg_chg": -4.95, "total_mcap": 5226574512800.0, "avg_turnover": 5.11, "leaders": ["豪威集团", "联芸科技", "恒玄科技"], "pe_label": "高估", "pe_color": "#ff5252", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 3.5}, {"sector": "证券", "count": 50, "limit_ups": 0, "rising": 50, "up_ratio": 100.0, "avg_chg": 2.38, "total_mcap": 3746192800300.0, "avg_turnover": 1.52, "leaders": ["中金公司", "华创云信", "信达证券"], "pe_label": "偏便宜", "pe_color": "#4caf50", "vol_label": "温和放量", "vol_color": "#ff5722", "seal_label": "无封单", "seal_color": "#78909c", "score": 8.5}, {"sector": "通信网络设备及器件", "count": 38, "limit_ups": 0, "rising": 5, "up_ratio": 13.2, "avg_chg": -2.52, "total_mcap": 3522021028900.0, "avg_turnover": 4.65, "leaders": ["锐捷网络", "大富科技", "高新兴"], "pe_label": "极高估", "pe_color": "#ff1744", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 3.5}, {"sector": "消费电子零部件及组装", "count": 78, "limit_ups": 0, "rising": 28, "up_ratio": 35.9, "avg_chg": -1.84, "total_mcap": 3106138082800.0, "avg_turnover": 3.48, "leaders": ["亿道信息", "盈趣科技", "昀冢科技"], "pe_label": "合理", "pe_color": "#ff9800", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 6.0}, {"sector": "保险", "count": 5, "limit_ups": 0, "rising": 5, "up_ratio": 100.0, "avg_chg": 3.33, "total_mcap": 2898923700000.0, "avg_turnover": 1.06, "leaders": ["中国太保", "中国人寿", "中国人保"], "pe_label": "低估", "pe_color": "#2e7d32", "vol_label": "显著放量", "vol_color": "#ff1744", "seal_label": "无封单", "seal_color": "#78909c", "score": 8.5}, {"sector": "印制电路板", "count": 44, "limit_ups": 1, "rising": 7, "up_ratio": 15.9, "avg_chg": -4.23, "total_mcap": 2849720557100.0, "avg_turnover": 6.14, "leaders": ["贤丰控股", "广合科技", "生益科技"], "pe_label": "高估", "pe_color": "#ff5252", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 3.5}, {"sector": "石油加工", "count": 22, "limit_ups": 0, "rising": 11, "up_ratio": 50.0, "avg_chg": -0.49, "total_mcap": 2837635000400.0, "avg_turnover": 1.86, "leaders": ["岳阳兴长", "ST沈化", "齐翔腾达"], "pe_label": "偏贵", "pe_color": "#ff8a65", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 5.0}, {"sector": "股份制银行", "count": 9, "limit_ups": 0, "rising": 9, "up_ratio": 100.0, "avg_chg": 1.49, "total_mcap": 2791328950000.0, "avg_turnover": 0.56, "leaders": ["兴业银行", "民生银行", "浙商银行"], "pe_label": "低估", "pe_color": "#2e7d32", "vol_label": "温和放量", "vol_color": "#ff5722", "seal_label": "无封单", "seal_color": "#78909c", "score": 8.5}, {"sector": "电信运营商", "count": 3, "limit_ups": 0, "rising": 3, "up_ratio": 100.0, "avg_chg": 1.59, "total_mcap": 2683808076000.0, "avg_turnover": 0.61, "leaders": ["中国电信", "中国联通", "中国移动"], "pe_label": "低估", "pe_color": "#2e7d32", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 7.0}, {"sector": "半导体设备", "count": 24, "limit_ups": 0, "rising": 1, "up_ratio": 4.2, "avg_chg": -6.95, "total_mcap": 2460682376800.0, "avg_turnover": 6.79, "leaders": ["富乐德", "华亚智能", "芯源微"], "pe_label": "极高估", "pe_color": "#ff1744", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 3.5}, {"sector": "锂电池", "count": 29, "limit_ups": 0, "rising": 9, "up_ratio": 31.0, "avg_chg": -1.11, "total_mcap": 2409728865700.0, "avg_turnover": 3.45, "leaders": ["国轩高科", "宁德时代", "孚能科技"], "pe_label": "合理", "pe_color": "#ff9800", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "无封单", "seal_color": "#78909c", "score": 6.0}, {"sector": "白酒", "count": 19, "limit_ups": 2, "rising": 19, "up_ratio": 100.0, "avg_chg": 5.13, "total_mcap": 2383464891900.0, "avg_turnover": 2.6, "leaders": ["古井贡酒", "金种子酒", "泸州老窖"], "pe_label": "偏便宜", "pe_color": "#4caf50", "vol_label": "显著放量", "vol_color": "#ff1744", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 8.5}, {"sector": "化学制剂", "count": 107, "limit_ups": 6, "rising": 100, "up_ratio": 93.5, "avg_chg": 3.92, "total_mcap": 2221138336900.0, "avg_turnover": 5.7, "leaders": ["迪哲医药-U", "常山药业", "舒泰神"], "pe_label": "合理", "pe_color": "#ff9800", "vol_label": "显著放量", "vol_color": "#ff1744", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 7.5}, {"sector": "集成电路制造", "count": 7, "limit_ups": 0, "rising": 0, "up_ratio": 0.0, "avg_chg": -5.67, "total_mcap": 2199471836000.0, "avg_turnover": 5.24, "leaders": ["晶合集成", "中芯国际", "华虹宏力"], "pe_label": "极高估", "pe_color": "#ff1744", "vol_label": "温和缩量", "vol_color": "#4caf50", "seal_label": "无封单", "seal_color": "#78909c", "score": 3.5}, {"sector": "医疗研发外包", "count": 30, "limit_ups": 5, "rising": 27, "up_ratio": 90.0, "avg_chg": 7.5, "total_mcap": 861093530200.0, "avg_turnover": 11.31, "leaders": ["万邦医药", "睿智医药", "药康生物"], "pe_label": "偏贵", "pe_color": "#ff8a65", "vol_label": "显著放量", "vol_color": "#ff1744", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 6.5}, {"sector": "原料药", "count": 42, "limit_ups": 3, "rising": 39, "up_ratio": 92.9, "avg_chg": 3.33, "total_mcap": 453999445600.0, "avg_turnover": 4.73, "leaders": ["博瑞医药", "石药创新", "美诺华"], "pe_label": "合理", "pe_color": "#ff9800", "vol_label": "显著放量", "vol_color": "#ff1744", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 7.5}, {"sector": "互联网电商", "count": 19, "limit_ups": 3, "rising": 15, "up_ratio": 78.9, "avg_chg": 3.13, "total_mcap": 139455595700.0, "avg_turnover": 4.44, "leaders": ["赛维时代", "跨境通", "若羽臣"], "pe_label": "合理", "pe_color": "#ff9800", "vol_label": "温和放量", "vol_color": "#ff5722", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 7.5}, {"sector": "煤炭开采", "count": 29, "limit_ups": 2, "rising": 25, "up_ratio": 86.2, "avg_chg": 2.4, "total_mcap": 2135380852100.0, "avg_turnover": 1.72, "leaders": ["新大洲A", "大有能源", "恒源煤电"], "pe_label": "偏便宜", "pe_color": "#4caf50", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 7.0}, {"sector": "IT服务", "count": 117, "limit_ups": 2, "rising": 69, "up_ratio": 59.0, "avg_chg": 0.14, "total_mcap": 1271663827000.0, "avg_turnover": 3.3, "leaders": ["银信科技", "*ST赛为", "证通电子"], "pe_label": "偏贵", "pe_color": "#ff8a65", "vol_label": "平量", "vol_color": "#ff9800", "seal_label": "封单薄弱", "seal_color": "#80cbc4", "score": 5.0}];
+var VALID5_UP = [{"name": "通源石油", "board": "创业板", "chg5": 33.21, "chg": -4.83}, {"name": "ST龙元", "board": "ST板块", "chg5": 32.99, "chg": -4.44}, {"name": "康龙化成", "board": "创业板", "chg5": 32.96, "chg": 9.13}, {"name": "联环药业", "board": "上证主板", "chg5": 32.53, "chg": 7.46}, {"name": "宏桥控股", "board": "深证主板", "chg5": 31.87, "chg": 6.69}, {"name": "奥浦迈", "board": "科创板", "chg5": 31.59, "chg": 5.78}, {"name": "药易购", "board": "创业板", "chg5": 30.99, "chg": 9.26}, {"name": "凯莱英", "board": "深证主板", "chg5": 30.91, "chg": 10.0}, {"name": "鑫宏业", "board": "创业板", "chg5": 29.81, "chg": -0.34}, {"name": "中岩大地", "board": "深证主板", "chg5": 29.66, "chg": 3.09}, {"name": "铂力特", "board": "科创板", "chg5": 29.1, "chg": 16.71}, {"name": "常山药业", "board": "创业板", "chg5": 28.99, "chg": 13.71}, {"name": "贵绳股份", "board": "上证主板", "chg5": 28.98, "chg": 7.58}, {"name": "中远海特", "board": "上证主板", "chg5": 28.9, "chg": -0.09}, {"name": "ST南新", "board": "ST板块", "chg5": 28.21, "chg": 3.9}, {"name": "众生药业", "board": "深证主板", "chg5": 28.19, "chg": 6.87}, {"name": "浙江美大", "board": "深证主板", "chg5": 27.74, "chg": 0.0}, {"name": "百奥赛图", "board": "科创板", "chg5": 27.53, "chg": 12.38}, {"name": "亚联机械", "board": "深证主板", "chg5": 27.22, "chg": -0.3}, {"name": "津药药业", "board": "上证主板", "chg5": 27.14, "chg": 7.88}];
+var VALID5_DN = [{"name": "信濠光电", "board": "创业板", "chg5": -27.07, "chg": -6.27}, {"name": "硅宝科技", "board": "创业板", "chg5": -26.6, "chg": -6.7}, {"name": "长源东谷", "board": "上证主板", "chg5": -26.28, "chg": -2.94}, {"name": "东岳硅材", "board": "创业板", "chg5": -26.21, "chg": -16.01}, {"name": "天华新能", "board": "创业板", "chg5": -25.93, "chg": -7.18}, {"name": "*ST香雪", "board": "ST板块", "chg5": -25.85, "chg": -3.88}, {"name": "回天新材", "board": "创业板", "chg5": -25.56, "chg": -5.99}, {"name": "深圳华强", "board": "深证主板", "chg5": -25.55, "chg": -6.21}, {"name": "*ST联翔", "board": "ST板块", "chg5": -25.48, "chg": -9.98}, {"name": "硕世生物", "board": "科创板", "chg5": -25.41, "chg": 5.98}, {"name": "实益达", "board": "深证主板", "chg5": -25.17, "chg": -9.96}, {"name": "杰华特", "board": "科创板", "chg5": -24.86, "chg": -9.59}, {"name": "青龙管业", "board": "深证主板", "chg5": -24.42, "chg": -8.31}, {"name": "融捷股份", "board": "深证主板", "chg5": -24.39, "chg": -5.76}, {"name": "中船特气", "board": "科创板", "chg5": -24.37, "chg": 0.81}, {"name": "*ST泉为", "board": "ST板块", "chg5": -24.31, "chg": -2.66}, {"name": "丽岛新材", "board": "上证主板", "chg5": -24.14, "chg": -2.07}, {"name": "恒林股份", "board": "上证主板", "chg5": -23.95, "chg": -6.24}, {"name": "惠科股份", "board": "深证主板", "chg5": -23.81, "chg": -9.77}, {"name": "宇环数控", "board": "深证主板", "chg5": -23.68, "chg": -4.47}];
+
+// ===== 计数器动画 =====
+function animateCounters() {
+  var counters = document.querySelectorAll('.counter');
+  counters.forEach(function(el) {
+    var target = parseInt(el.dataset.target);
+    if (isNaN(target)) return;
+    var duration = 800;
+    var start = performance.now();
+    function update(now) {
+      var elapsed = now - start;
+      var progress = Math.min(elapsed / duration, 1);
+      var eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = Math.round(target * eased).toLocaleString();
+      if (progress < 1) requestAnimationFrame(update);
+      else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(update);
+  });
+}
+
+// ===== 可展开列表 =====
+function toggleGroup(group, btn) {
+  var rows = document.querySelectorAll('.expandable[data-group="' + group + '"]');
+  var isOpen = rows.length > 0 && rows[0].classList.contains('show');
+  rows.forEach(function(r) { r.classList.toggle('show', !isOpen); });
+  btn.textContent = isOpen ? '展开全部' : '收起';
+}
+
+// ===== 5日涨跌展开（追加行） =====
+function toggle5Up(btn) {
+  var container = document.getElementById('sec-5up');
+  var table = container.querySelector('table');
+  var existing = container.querySelector('.exp-added');
+  if (existing) {
+    existing.remove();
+    btn.textContent = '展开全部';
+    return;
+  }
+  var tbody = document.createElement('tbody');
+  tbody.className = 'exp-added';
+  VALID5_UP.forEach(function(s, i) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="color:#888;">' + (i+11) + '</td><td>' + s.name + '</td>' +
+      '<td style="font-size:11px;">' + s.board + '</td>' +
+      '<td style="color:#e74c3c;">' + (s.chg5>=0?'+':'') + s.chg5.toFixed(2) + '%</td>' +
+      '<td style="color:#888;font-size:11px;">今' + (s.chg>=0?'+':'') + s.chg.toFixed(2) + '%</td>';
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  btn.textContent = '收起';
+}
+
+function toggle5Dn(btn) {
+  var container = document.getElementById('sec-5dn');
+  var table = container.querySelector('table');
+  var existing = container.querySelector('.exp-added');
+  if (existing) {
+    existing.remove();
+    btn.textContent = '展开全部';
+    return;
+  }
+  var tbody = document.createElement('tbody');
+  tbody.className = 'exp-added';
+  VALID5_DN.forEach(function(s, i) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="color:#888;">' + (i+11) + '</td><td>' + s.name + '</td>' +
+      '<td style="font-size:11px;">' + s.board + '</td>' +
+      '<td style="color:#27ae60;">' + (s.chg5>=0?'+':'') + s.chg5.toFixed(2) + '%</td>' +
+      '<td style="color:#888;font-size:11px;">今' + (s.chg>=0?'+':'') + s.chg.toFixed(2) + '%</td>';
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  btn.textContent = '收起';
+}
+
+// ===== 碰撞泡泡图 =====
+(function() {
+  var canvas = document.getElementById('bubbleChart');
+  if (!canvas || !BUBBLE_DATA.length) return;
+  var ctx = canvas.getContext('2d');
+  var tooltip = document.getElementById('bubbleTooltip');
+  var W = canvas.width, H = canvas.height;
+  var floorColor = '#1a1a2e';  // 画板背景
+
+  // === 颜色阶梯: 根据 avg_chg 和 limit_ups 分配 ===
+  function getBubbleStyle(d) {
+    var chg = d.avg_chg, lu = d.limit_ups;
+    if (lu >= 5)     return { fill:'#c62828', glow:'#ff1744', label:'多股涨停' };
+    if (lu >= 2)     return { fill:'#d32f2f', glow:'#ff5252', label:'板块涨停潮' };
+    if (chg >= 5)    return { fill:'#e53935', glow:'#ff6e40', label:'强势' };
+    if (chg >= 2)    return { fill:'#ff5722', glow:'#ff8a65', label:'偏强' };
+    if (chg >= 0.5)  return { fill:'#ff9800', glow:'#ffb74d', label:'温和' };
+    if (chg > 0)     return { fill:'#ffcc80', glow:'#ffe0b2', label:'微涨' };
+    if (chg == 0)    return { fill:'#78909c', glow:'#b0bec5', label:'平盘' };
+    if (chg > -1.5)  return { fill:'#80cbc4', glow:'#b2dfdb', label:'微跌' };
+    if (chg > -3)    return { fill:'#4caf50', glow:'#81c784', label:'下跌' };
+    if (chg > -5)    return { fill:'#2e7d32', glow:'#4caf50', label:'深跌' };
+    return { fill:'#1b5e20', glow:'#2e7d32', label:'大跌' };
+  }
+
+  // === 半径计算: log市值映射 ===
+  function calcRadius(mcap) {
+    var logM = Math.log10(Math.max(mcap, 1e8));
+    return 16 + (logM - 8) / 4 * 38;
+  }
+
+  // === 初始化泡泡 ===
+  var bubbles = [];
+  BUBBLE_DATA.forEach(function(d) {
+    var r = calcRadius(d.total_mcap);
+    var style = getBubbleStyle(d);
+    bubbles.push({
+      x: 30 + Math.random() * (W - 60),
+      y: 30 + Math.random() * (H - 60),
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      r: r, baseR: r,
+      sector: d.sector, avg_chg: d.avg_chg, up_ratio: d.up_ratio,
+      mcap: d.total_mcap, limit_ups: d.limit_ups, count: d.count,
+      leaders: d.leaders, style: style,
+      hoverScale: 1
+    });
+  });
+
+  // === 碰撞检测与响应 ===
+  function resolveCollision(a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var minDist = a.r * a.hoverScale + b.r * b.hoverScale + 1;
+    if (dist < minDist && dist > 0.001) {
+      // 分离重叠
+      var overlap = minDist - dist;
+      var nx = dx / dist, ny = dy / dist;
+      var totalMass = a.r * a.r + b.r * b.r;
+      var aRatio = b.r * b.r / totalMass;
+      var bRatio = a.r * a.r / totalMass;
+      a.x -= nx * overlap * aRatio * 0.8;
+      a.y -= ny * overlap * aRatio * 0.8;
+      b.x += nx * overlap * bRatio * 0.8;
+      b.y += ny * overlap * bRatio * 0.8;
+      // 弹性碰撞
+      var dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+      var dvDotN = dvx * nx + dvy * ny;
+      if (dvDotN > 0) {
+        var impulse = dvDotN * 0.8;
+        a.vx -= nx * impulse * aRatio;
+        a.vy -= ny * impulse * aRatio;
+        b.vx += nx * impulse * bRatio;
+        b.vy += ny * impulse * bRatio;
+      }
+    }
+  }
+
+  // === 物理更新 ===
+  function updatePhysics() {
+    var maxSpeed = 1.5;
+    bubbles.forEach(function(b) {
+      // 减速（hover时减速更多）
+      b.vx *= (b.hoverScale > 1 ? 0.995 : 0.999);
+      b.vy *= (b.hoverScale > 1 ? 0.995 : 0.999);
+      // 最小速度(防止静止)
+      var spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      if (spd < 0.15 && b.hoverScale < 1.05) {
+        var angle = Math.random() * Math.PI * 2;
+        b.vx += Math.cos(angle) * 0.08;
+        b.vy += Math.sin(angle) * 0.08;
+      }
+      // 限速
+      if (spd > maxSpeed) {
+        b.vx = b.vx / spd * maxSpeed;
+        b.vy = b.vy / spd * maxSpeed;
+      }
+      // 位移
+      b.x += b.vx;
+      b.y += b.vy;
+      // 边界碰撞
+      var cr = b.r * b.hoverScale;
+      if (b.x - cr < 0) { b.x = cr; b.vx = Math.abs(b.vx) * 0.7; }
+      if (b.x + cr > W) { b.x = W - cr; b.vx = -Math.abs(b.vx) * 0.7; }
+      if (b.y - cr < 0) { b.y = cr; b.vy = Math.abs(b.vy) * 0.7; }
+      if (b.y + cr > H) { b.y = H - cr; b.vy = -Math.abs(b.vy) * 0.7; }
+      // Hover缩放平滑
+      b.hoverScale += ((b._targetScale || 1) - b.hoverScale) * 0.15;
+    });
+    // 泡泡间碰撞 O(n²)
+    for (var i = 0; i < bubbles.length; i++) {
+      for (var j = i + 1; j < bubbles.length; j++) {
+        resolveCollision(bubbles[i], bubbles[j]);
+      }
+    }
+  }
+
+  // === 绘制 ===
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景微妙网格
+    ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+    ctx.lineWidth = 0.5;
+    for (var gx = 0; gx < W; gx += 40) {
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for (var gy = 0; gy < H; gy += 40) {
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+
+    // 画泡泡
+    bubbles.forEach(function(b) {
+      var cr = b.r * b.hoverScale;
+      var s = b.style;
+
+      // 光晕
+      var glowGrad = ctx.createRadialGradient(b.x, b.y, cr * 0.5, b.x, b.y, cr * 1.8);
+      glowGrad.addColorStop(0, s.glow);
+      glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, cr * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = glowGrad;
+      ctx.fill();
+
+      // 主体渐变
+      var bodyGrad = ctx.createRadialGradient(b.x - cr*0.25, b.y - cr*0.3, cr * 0.1, b.x, b.y, cr);
+      bodyGrad.addColorStop(0, 'rgba(255,255,255,0.3)');
+      bodyGrad.addColorStop(0.6, s.fill);
+      bodyGrad.addColorStop(1, s.fill.replace(/[\d.]+\)$/, '0.65)'));
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, cr, 0, Math.PI * 2);
+      ctx.fillStyle = bodyGrad;
+      ctx.fill();
+      ctx.strokeStyle = s.fill;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 文字标签
+      if (cr > 18) {
+        ctx.fillStyle = '#fff';
+        ctx.font = (cr > 28 ? 'bold 11px' : '10px') + ' "Microsoft YaHei"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        var label = b.sector.length > 7 ? b.sector.slice(0, 7) : b.sector;
+        ctx.fillText(label, b.x, b.y - 2);
+        // 涨跌幅小字
+        if (cr > 25) {
+          ctx.font = '9px "Microsoft YaHei"';
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          ctx.fillText((b.avg_chg >= 0 ? '+' : '') + b.avg_chg.toFixed(1) + '%', b.x, b.y + 10);
+        }
+      }
+    });
+  }
+
+  // === 动效: 初始从中心爆开 ===
+  var cx = W / 2, cy = H / 2;
+  bubbles.forEach(function(b) {
+    var dx = b.x - cx, dy = b.y - cy;
+    b.x = cx + dx * 0.01;
+    b.y = cy + dy * 0.01;
+    b.vx = dx * 0.04 + (Math.random() - 0.5) * 1;
+    b.vy = dy * 0.04 + (Math.random() - 0.5) * 1;
+  });
+
+  // === 主循环 ===
+  function loop() {
+    updatePhysics();
+    draw();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // === Hover 交互 ===
+  canvas.addEventListener('mousemove', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.clientX - rect.left) * (W / rect.width);
+    var my = (e.clientY - rect.top) * (H / rect.height);
+    var found = null;
+    for (var i = bubbles.length - 1; i >= 0; i--) {
+      var b = bubbles[i];
+      var dx = mx - b.x, dy = my - b.y;
+      if (dx * dx + dy * dy <= (b.r * 1.2) * (b.r * 1.2)) {
+        found = b; break;
+      }
+    }
+    bubbles.forEach(function(b) { b._targetScale = (b === found) ? 1.25 : 1; });
+    if (found) {
+      tooltip.style.display = 'block';
+      tooltip.style.left = (found.x + found.r + 12) + 'px';
+      tooltip.style.top = (found.y - 25) + 'px';
+      var healthLine = '';
+      if (found.score > 0) {
+        healthLine = 'PE: <span style="color:' + (found.pe_color||'#888') + ';">' + (found.pe_label||'-') + '</span> | ' +
+          '量: <span style="color:' + (found.vol_color||'#888') + ';">' + (found.vol_label||'-') + '</span> | ' +
+          '封单: <span style="color:' + (found.seal_color||'#888') + ';">' + (found.seal_label||'-') + '</span> | ' +
+          '评分: <b style="color:#ff9800;">' + (found.score||0).toFixed(1) + '</b><br>';
+      }
+      tooltip.innerHTML = '<b>' + found.sector + '</b> <span style="font-size:10px;color:' + found.style.fill + ';">' + found.style.label + '</span><br>' +
+        '平均涨跌: <b style="color:' + (found.avg_chg>=0?'#ff5252':'#69f0ae') + ';">' + (found.avg_chg>=0?'+':'') + found.avg_chg.toFixed(2) + '%</b> | 上涨占比: ' + found.up_ratio + '%<br>' +
+        '涨停: ' + found.limit_ups + '家 | 市值: ' + (found.mcap/1e8).toFixed(0) + '亿 | ' + found.count + '只成分股<br>' +
+        '代表: ' + (found.leaders||[]).slice(0,2).join(', ') + '<br>' + healthLine;
+      canvas.style.cursor = 'pointer';
+    } else {
+      tooltip.style.display = 'none';
+      canvas.style.cursor = 'default';
+    }
+  });
+  canvas.addEventListener('mouseleave', function() {
+    tooltip.style.display = 'none';
+    canvas.style.cursor = 'default';
+    bubbles.forEach(function(b) { b._targetScale = 1; });
+  });
+})();
+
+// ===== 页面加载完成后执行 =====
+document.addEventListener('DOMContentLoaded', function() {
+  animateCounters();
+  // 5日涨跌的展开按钮
+  var btn5up = document.querySelector('#sec-5up .expand-btn');
+  if (btn5up) btn5up.onclick = function() { toggle5Up(this); };
+  var btn5dn = document.querySelector('#sec-5dn .expand-btn');
+  if (btn5dn) btn5dn.onclick = function() { toggle5Dn(this); };
+});
+</script>
+
+</body>
+</html>
